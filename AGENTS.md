@@ -3,7 +3,7 @@
 > Give this file to your coding agent and check that it is using these instructions. Keep the stack, commands, and ground rules current.
 
 ## 1. Project Overview
-- **What this repo builds:** [1–2 sentence summary]
+- **What this repo builds:** This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already
 - **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
 - **Tech stack:** [e.g., Python 3.12 / FastAPI / Next.js / SQLite / OpenRouter API]
 
