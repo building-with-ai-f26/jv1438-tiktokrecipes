@@ -1,10 +1,10 @@
-# [Project Name]
+# TikTok Recipes
 
 > **One-line pitch:** [Who is this for, and what job does it do for them?]
 
 - **Builder:** [Your Name] (`@github-handle`)
 - **Pod:** [Pod Name / Number]
-- **Product Page & Living PRD:** [Add your GitHub Pages URL]
+- **Product Page & Living PRD:** https://building-with-ai-f26.github.io/jv1438-tiktokrecipes/
 - **App:** runs locally through Week 4; add a cloud URL in Build 5.
 
 ## Start here: Build 1
