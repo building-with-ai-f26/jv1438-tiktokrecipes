@@ -5,13 +5,13 @@
 ## 1. Project Overview
 - **What this repo builds:** This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already
 - **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
-- **Tech stack:** [e.g., Python 3.12 / FastAPI / Next.js / SQLite / OpenRouter API]
+- **Tech stack:** Node.js (no npm packages) / plain HTML+JS in `public/` / OpenRouter API. `server.js` fetches the TikTok caption and calls the model.
 
 ## 2. Commands
-- **Install dependencies:** `[e.g., npm install / uv sync]`
-- **Run locally:** `[e.g., npm run dev]`
-- **Run deterministic tests:** `[e.g., pytest / npm test]`
-- **Run model evals:** `[e.g., python tests/eval.py]`
+- **Install dependencies:** none (needs Node 20.6+ for `--env-file`). Copy `.env.example` to `.env` and add your OpenRouter key.
+- **Run locally:** `node --env-file=.env server.js`, then open http://localhost:3000
+- **Run deterministic tests:** none yet (Build 4)
+- **Run model evals:** none yet (Build 4)
 
 ## 3. Non-Negotiable Engineering Rules
 1. **Plan before coding:** Before touching multiple files, propose a brief plan and wait for approval.

@@ -38,8 +38,13 @@ Create your PostHog account in Week 1. Install it on the Product Page and local 
 Clone **your own repository** and ask your coding agent to document the exact install and run commands here and in `AGENTS.md`.
 
 ```bash
-git clone https://github.com/building-with-ai-f26/<your-repo-name>.git
-cd <your-repo-name>
+git clone https://github.com/building-with-ai-f26/jv1438-tiktokrecipes.git
+cd jv1438-tiktokrecipes
+cp .env.example .env        # then paste your OpenRouter key into .env
+node --env-file=.env server.js
+# open http://localhost:3000
 ```
+
+Needs Node.js 20.6 or newer. No `npm install` required.
 
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.

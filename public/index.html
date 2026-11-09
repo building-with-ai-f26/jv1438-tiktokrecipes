@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Recipe Extracter</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; color: #111827; line-height: 1.5; }
+    .container { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { margin: 0 0 4px; font-size: 28px; }
+    .sub { color: #4b5563; margin: 0 0 24px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin: 12px 0 4px; }
+    .hint { font-weight: 400; color: #6b7280; font-size: 14px; }
+    input, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; }
+    textarea { min-height: 70px; }
+    button { margin-top: 16px; padding: 10px 18px; border: 0; border-radius: 8px; background: #1d63dc; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .error { color: #b91c1c; }
+    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .have li { color: #15803d; }
+    .need li { color: #b45309; }
+    .caption { color: #4b5563; font-size: 14px; white-space: pre-wrap; }
+    .hidden { display: none; }
+    #checklist label { font-weight: 400; margin: 6px 0; display: flex; gap: 8px; align-items: center; }
+    #checklist input { width: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TikTok Recipe Extracter</h1>
+    <p class="sub">Paste a TikTok link and get the ingredients and steps without rewatching.</p>
+
+    <form id="form" class="card">
+      <label for="url">TikTok link</label>
+      <input id="url" type="url" placeholder="https://www.tiktok.com/@creator/video/123..." />
+
+      <label for="text">Recipe text or transcript <span class="hint">(optional; helps when the caption is short)</span></label>
+      <textarea id="text" placeholder="Paste anything the creator says or writes..."></textarea>
+
+      <button id="submit" type="submit">Extract recipe</button>
+      <p id="error" class="error hidden"></p>
+    </form>
+
+    <div id="result" class="card hidden">
+      <h2 id="title"></h2>
+      <p id="notes" class="hint"></p>
+      <h3>Ingredients in this video</h3>
+      <ul id="ingredients"></ul>
+
+      <h3>What do you already have in your fridge?</h3>
+      <p class="hint">Tick everything you have.</p>
+      <div id="checklist"></div>
+      <button id="compare" type="button">Make my grocery list</button>
+      <div id="comparison" class="cols hidden">
+        <div><h3>You already have</h3><ul id="have" class="have"></ul></div>
+        <div><h3>You still need to buy</h3><ul id="need" class="need"></ul></div>
+      </div>
+
+      <h3>Steps</h3>
+      <ol id="steps"></ol>
+      <details>
+        <summary class="hint">Source caption</summary>
+        <p id="caption" class="caption"></p>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let ingredients = [];
+
+    function fillList(id, items) {
+      $(id).innerHTML = "";
+      for (const text of items) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        $(id).appendChild(li);
+      }
+    }
+
+    $("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("submit").disabled = true;
+      $("submit").textContent = "Extracting...";
+      $("error").classList.add("hidden");
+
+      try {
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: $("url").value.trim(), text: $("text").value.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const r = data.recipe;
+        ingredients = r.ingredients.map((i) => (i.quantity ? i.quantity + " " : "") + i.item);
+        $("title").textContent = r.title || "Recipe";
+        $("notes").textContent = r.notes || "";
+        fillList("ingredients", ingredients);
+        fillList("steps", r.steps);
+
+        // Build one checkbox per ingredient so the user can say what they already have.
+        $("checklist").innerHTML = "";
+        ingredients.forEach((text, n) => {
+          const label = document.createElement("label");
+          const box = document.createElement("input");
+          box.type = "checkbox";
+          box.value = n;
+          label.append(box, document.createTextNode(text));
+          $("checklist").appendChild(label);
+        });
+        $("comparison").classList.add("hidden");
+        $("caption").textContent = data.caption || "(no caption, used pasted text)";
+        $("result").classList.remove("hidden");
+      } catch (err) {
+        $("error").textContent = err.message;
+        $("error").classList.remove("hidden");
+      } finally {
+        $("submit").disabled = false;
+        $("submit").textContent = "Extract recipe";
+      }
+    });
+
+    // Split the ingredients into "have" (ticked) and "need" (not ticked).
+    $("compare").addEventListener("click", () => {
+      const ticked = new Set([...$("checklist").querySelectorAll("input:checked")].map((b) => Number(b.value)));
+      const have = ingredients.filter((_, n) => ticked.has(n));
+      const need = ingredients.filter((_, n) => !ticked.has(n));
+      fillList("have", have.length ? have : ["—"]);
+      fillList("need", need.length ? need : ["Nothing, you're ready to cook!"]);
+      $("comparison").classList.remove("hidden");
+    });
+  </script>
+</body>
+</html>

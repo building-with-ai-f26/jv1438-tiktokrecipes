@@ -157,12 +157,13 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> [Build 1: local prototype / Builds 2–4: local app / Build 5: cloud app]<br />
-        <strong>Demo:</strong> [Add a screenshot or GIF now; add the live cloud app URL in Build 5.]
+        <strong>Current Status:</strong> Build 1: local prototype<br />
+        <strong>Demo:</strong> Paste a TikTok link → get the ingredients and steps → tick what's already in your fridge → get a "still need to buy" list. Screenshots from a real run below.
       </p>
-      <p class="meta">
-        Ask your coding agent to embed a screenshot or GIF of your local prototype for Build 1. Keep this evidence current, then add your cloud app link and two-minute video in Build 5.
-      </p>
+      <div class="grid-2">
+        <img src="prototype-screenshot-1.png" alt="Prototype: TikTok link pasted, ingredients extracted for a summery salad" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+        <img src="prototype-screenshot-2.png" alt="Prototype: fridge checklist split into already-have and still-need-to-buy lists" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+      </div>
     </section>
 
     <!-- LIVING PRD (Updated every week!) -->
@@ -184,18 +185,18 @@
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> [What is the #1 technical or user risk that could sink this product?]</p>
-      <p><strong>Simple Architecture:</strong> [User Input] → [Your App / Server] → [AI Model / Tool] → [Output]</p>
+      <p><strong>Riskiest Assumption:</strong> That the recipe is written in the TikTok caption. Many creators only say the recipe out loud, so the caption often lists ingredients but no steps (or nothing at all). Reading the caption also relies on TikTok's public page format, which is unofficial and could change.</p>
+      <p><strong>Simple Architecture:</strong> [TikTok link + optional pasted text] → [Local Node.js server reads the caption from the TikTok page] → [Free AI model via OpenRouter extracts ingredients + steps as JSON] → [Web page shows the recipe and a fridge checklist → have / need-to-buy lists]</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">[Record actual spend]</div>
+          <div class="stat-value">$0 API</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
-          <div class="stat-value">[Not yet estimated]</div>
+          <div class="stat-value">$0 (free model)</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
@@ -216,10 +217,10 @@
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [What you actually built; link your local prototype screenshot or GIF above.]</li>
-          <li><strong>Things learned with AI:</strong> [What you learned from AI practice and Terminus Episodes 1 and 2.]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> A local prototype (screenshots above). Paste a TikTok link, and the app reads the video caption, uses a free AI model to pull out the ingredients and steps, then asks what's already in your fridge and splits the list into "already have" and "still need to buy". Tested on a real summer salad TikTok.</li>
+          <li><strong>Things learned with AI:</strong> I learned the basics of building with AI, including the difference between Git and GitHub, how to use the terminal, and how important it is to hide your API key in .env.</li>
+          <li><strong>What broke / changed in PRD:</strong> TikTok's official caption endpoint (oEmbed) no longer returns captions, so the app reads the caption from the public video page instead. In the salad test, the caption listed the ingredients but no steps: the recipe was spoken, not written. That became my riskiest assumption. The first free model was overloaded, so I switched to OpenRouter's auto-picked free model. I also changed the flow so the fridge question comes <em>after</em> the ingredients are shown, as a checklist.</li>
+          <li><strong>Cost & time this week:</strong> $0.00 API (free OpenRouter model; coding agent via existing Claude subscription) · 5–7 hours</li>
         </ul>
       </div>
 
