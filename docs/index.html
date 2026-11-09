@@ -192,7 +192,8 @@
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">$0 API</div>
+          <div class="stat-value">$7.69</div>
+          <div class="meta">Claude subscription ($200/yr, prorated ≈ $3.85/week × 2 weeks) + $0 API</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
@@ -220,7 +221,7 @@
           <li><strong>What shipped:</strong> A local prototype (screenshots above). Paste a TikTok link, and the app reads the video caption, uses a free AI model to pull out the ingredients and steps, then asks what's already in your fridge and splits the list into "already have" and "still need to buy". Tested on a real summer salad TikTok.</li>
           <li><strong>Things learned with AI:</strong> I learned the basics of building with AI, including the difference between Git and GitHub, how to use the terminal, and how important it is to hide your API key in .env.</li>
           <li><strong>What broke / changed in PRD:</strong> TikTok's official caption endpoint (oEmbed) no longer returns captions, so the app reads the caption from the public video page instead. In the salad test, the caption listed the ingredients but no steps: the recipe was spoken, not written. That became my riskiest assumption. The first free model was overloaded, so I switched to OpenRouter's auto-picked free model. I also changed the flow so the fridge question comes <em>after</em> the ingredients are shown, as a checklist.</li>
-          <li><strong>Cost & time this week:</strong> $0.00 API (free OpenRouter model; coding agent via existing Claude subscription) · 5–7 hours</li>
+          <li><strong>Cost & time this week:</strong> $7.69 (Claude subscription $200/yr, prorated ≈ $3.85/week × 2 weeks since Oct 27 setup) + $0.00 API (free OpenRouter model) · 5–7 hours</li>
         </ul>
       </div>
 
