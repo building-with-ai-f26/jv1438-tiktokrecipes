@@ -1,4 +1,4 @@
-# TikTok Recipes
+# TikTok Recipe Extractor
 
 > **One-line pitch:** This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already
 
