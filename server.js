@@ -1,4 +1,4 @@
-// TikTok Recipe Extracter — local prototype server (no dependencies).
+// TikTok Recipe Extractor — local prototype server (no dependencies).
 // Run: node --env-file=.env server.js   then open http://localhost:3000
 
 const http = require("http");
@@ -94,4 +94,4 @@ const server = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-server.listen(PORT, () => console.log(`Recipe Extracter running at http://localhost:${PORT} (model: ${MODEL})`));
+server.listen(PORT, () => console.log(`Recipe Extractor running at http://localhost:${PORT} (model: ${MODEL})`));
