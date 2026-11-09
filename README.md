@@ -1,9 +1,9 @@
 # TikTok Recipes
 
-> **One-line pitch:** [Who is this for, and what job does it do for them?]
+> **One-line pitch:** This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already
 
-- **Builder:** [Your Name] (`@github-handle`)
-- **Pod:** [Pod Name / Number]
+- **Builder:** Juhi Vyas (`@jv1438`)
+- **Pod:** Pod M5
 - **Product Page & Living PRD:** https://building-with-ai-f26.github.io/jv1438-tiktokrecipes/
 - **App:** runs locally through Week 4; add a cloud URL in Build 5.
 
