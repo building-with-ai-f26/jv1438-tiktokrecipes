@@ -55,6 +55,6 @@ Needs Node.js 20.6 or newer. No `npm install` required.
 | 🍳 **Plan** | Set meals × people for the week. Get recipe ideas from your kitchen, or add one from a TikTok link, typed/pasted text, or a screenshot from any website. Set portions per recipe. "I cooked this" clears used-up items. |
 | 🛒 **List** | Grocery list scaled to your portions, minus what you have, grouped by store section. Tick items off, copy the list, and "I bought these" moves them into your kitchen. |
 
-Server endpoints in `server.js`: `/api/suggest`, `/api/extract` (TikTok), `/api/grocery`. The free model (`openrouter/free`) can take 1–2 minutes per request.
+Server endpoints in `server.js`: `/api/suggest`, `/api/extract` (TikTok), `/api/grocery`. Models are set in `.env`: `OPENROUTER_MODEL` (default `deepseek/deepseek-v4-flash`, about $0.0003 per request, needs OpenRouter credits) and `OPENROUTER_VISION_MODEL` for screenshots (default `openrouter/free`, $0). Setting `OPENROUTER_MODEL=openrouter/free` makes everything free, but slower and less consistent.
 
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.

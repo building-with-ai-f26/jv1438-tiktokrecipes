@@ -7,7 +7,9 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5";
+const MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-v4-flash";
+// Screenshots need a model that can read images; the free router picks one at $0.
+const VISION_MODEL = process.env.OPENROUTER_VISION_MODEL || "openrouter/free";
 
 // Step 1: get the video's caption from the public TikTok video page (no login needed).
 // The page embeds its data as JSON in a <script> tag. This is unofficial and may break if TikTok changes it.
@@ -28,24 +30,26 @@ async function getTikTokCaption(videoUrl) {
 // `content` is either a string, or a list of text/image parts when a screenshot is attached.
 // Free models sometimes send back an empty or broken answer, so try one more time before giving up.
 async function askModel(content) {
+  // A list of parts means a screenshot is attached, so use the image-capable model.
+  const model = Array.isArray(content) ? VISION_MODEL : MODEL;
   try {
-    return await askModelOnce(content);
+    return await askModelOnce(content, model);
   } catch (err) {
     // Only retry a bad answer; a missing key or an OpenRouter error (like no credits) won't fix itself.
     if (!err.message.startsWith("The AI didn't return")) throw err;
     console.error("Retrying after: " + err.message);
-    return await askModelOnce(content);
+    return await askModelOnce(content, model);
   }
 }
 
-async function askModelOnce(content) {
+async function askModelOnce(content, model) {
   if (!API_KEY || API_KEY.includes("replace-with-your-key")) {
     throw new Error("Missing OPENROUTER_API_KEY. Add your key to .env and restart the server.");
   }
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: "Bearer " + API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content }] }),
+    body: JSON.stringify({ model, messages: [{ role: "user", content }] }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error("OpenRouter error: " + (data.error?.message || res.status));
@@ -201,4 +205,4 @@ const server = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-server.listen(PORT, () => console.log(`Fridge to Feast running at http://localhost:${PORT} (model: ${MODEL})`));
+server.listen(PORT, () => console.log(`Fridge to Feast running at http://localhost:${PORT} (model: ${MODEL}, screenshots: ${VISION_MODEL})`));
