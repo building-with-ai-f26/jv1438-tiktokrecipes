@@ -25,7 +25,18 @@ async function getTikTokCaption(videoUrl) {
 }
 
 // Send one prompt to the model and parse the JSON it returns. Shared by every AI feature.
+// Free models sometimes send back an empty or broken answer, so try one more time before giving up.
 async function askModel(prompt) {
+  try {
+    return await askModelOnce(prompt);
+  } catch (err) {
+    if (err.message.startsWith("Missing OPENROUTER_API_KEY")) throw err;
+    console.error("Retrying after: " + err.message);
+    return await askModelOnce(prompt);
+  }
+}
+
+async function askModelOnce(prompt) {
   if (!API_KEY || API_KEY.includes("replace-with-your-key")) {
     throw new Error("Missing OPENROUTER_API_KEY. Add your key to .env and restart the server.");
   }
@@ -41,7 +52,11 @@ async function askModel(prompt) {
   const text = data.choices?.[0]?.message?.content || "";
   const start = text.indexOf("{"), end = text.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("The AI didn't return a usable answer. Try again.");
-  return { json: JSON.parse(text.slice(start, end + 1)), usage: data.usage };
+  try {
+    return { json: JSON.parse(text.slice(start, end + 1)), usage: data.usage };
+  } catch {
+    throw new Error("The AI didn't return a usable answer. Try again.");
+  }
 }
 
 // Step 2: ask the AI model to turn the caption (and any pasted text) into a structured recipe.
@@ -128,6 +143,7 @@ Rules:
 - Subtract what is already in the kitchen. Leave an item out if the kitchen has enough; if it has some, list only what's missing.
 - Skip salt, pepper, cooking oil and water.
 - Give specific quantities in the units people buy at a store (e.g. "1.5 lbs", "1 bunch", "2 cans (15 oz)", "1 dozen").
+  Never list less than one store unit: a recipe needing 1 tsp cumin means "1 jar" on the list.
 - "for" lists the recipe titles that need the item.
 - Section names must be from: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry, Spices & Sauces, Frozen, Other. Leave out empty sections.
 
