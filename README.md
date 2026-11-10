@@ -51,8 +51,8 @@ Needs Node.js 20.6 or newer. No `npm install` required.
 
 | Tab | What it does |
 | --- | --- |
-| 🧊 **Kitchen** | Add what you have (typed, quick-add buttons, or paste a list). Flag ⏰ items to use up soon. Saved in your browser. |
-| 🍳 **Plan** | Set meals × people for the week. Get recipe ideas from your kitchen, or import one from a TikTok link or pasted text. Set portions per recipe. "I cooked this" clears used-up items. |
+| 🧊 **Kitchen** | Add what you have (typed, quick-add buttons, or paste a list). Flag ⏰ items to use up soon. Set your pantry staples (spices, oils, sauces) once; recipes use them and the grocery list skips them. Saved in your browser. |
+| 🍳 **Plan** | Set meals × people for the week. Get recipe ideas from your kitchen, or add one from a TikTok link, typed/pasted text, or a screenshot from any website. Set portions per recipe. "I cooked this" clears used-up items. |
 | 🛒 **List** | Grocery list scaled to your portions, minus what you have, grouped by store section. Tick items off, copy the list, and "I bought these" moves them into your kitchen. |
 
 Server endpoints in `server.js`: `/api/suggest`, `/api/extract` (TikTok), `/api/grocery`. The free model (`openrouter/free`) can take 1–2 minutes per request.

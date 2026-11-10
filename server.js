@@ -25,25 +25,26 @@ async function getTikTokCaption(videoUrl) {
 }
 
 // Send one prompt to the model and parse the JSON it returns. Shared by every AI feature.
+// `content` is either a string, or a list of text/image parts when a screenshot is attached.
 // Free models sometimes send back an empty or broken answer, so try one more time before giving up.
-async function askModel(prompt) {
+async function askModel(content) {
   try {
-    return await askModelOnce(prompt);
+    return await askModelOnce(content);
   } catch (err) {
     if (err.message.startsWith("Missing OPENROUTER_API_KEY")) throw err;
     console.error("Retrying after: " + err.message);
-    return await askModelOnce(prompt);
+    return await askModelOnce(content);
   }
 }
 
-async function askModelOnce(prompt) {
+async function askModelOnce(content) {
   if (!API_KEY || API_KEY.includes("replace-with-your-key")) {
     throw new Error("Missing OPENROUTER_API_KEY. Add your key to .env and restart the server.");
   }
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: "Bearer " + API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content }] }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error("OpenRouter error: " + (data.error?.message || res.status));
@@ -59,27 +60,29 @@ async function askModelOnce(prompt) {
   }
 }
 
-// Step 2: ask the AI model to turn the caption (and any pasted text) into a structured recipe.
-async function extractRecipe(sourceText) {
-  const prompt = `You extract recipes from TikTok video captions and transcripts.
+// Step 2: ask the AI model to turn the caption, pasted text and/or screenshot into a structured recipe.
+async function extractRecipe(sourceText, image) {
+  const prompt = `You extract recipes from TikTok captions, recipe websites, screenshots, and recipes people type in.
 Return ONLY a JSON object with this shape:
 {"title": string, "ingredients": [{"item": string, "quantity": string}], "steps": [string], "notes": string}
 
 Rules:
-- Only use information in the source text. Do not invent ingredients or steps.
+- Only use information in the source text${image ? " and the attached image" : ""}. Do not invent ingredients or steps.
 - If quantities are not given, use "" for quantity.
 - If the source has no real recipe, return empty lists and explain in "notes".
 
 Source text:
-"""${sourceText}"""`;
+"""${sourceText || "(none, the recipe is in the image)"}"""`;
 
-  const { json, usage } = await askModel(prompt);
+  const content = image ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: image } }] : prompt;
+  const { json, usage } = await askModel(content);
   return { recipe: json, usage };
 }
 
 async function handleExtract(body) {
-  const { url, text } = JSON.parse(body || "{}");
-  if (!url && !text) throw new Error("Paste a TikTok link or the recipe text.");
+  const { url, text, image } = JSON.parse(body || "{}");
+  if (!url && !text && !image) throw new Error("Paste a TikTok link, type a recipe, or add a screenshot.");
+  if (image && !/^data:image\/(png|jpeg|webp|gif);base64,/.test(image)) throw new Error("That screenshot isn't an image file we can read.");
 
   let caption = "", author = "";
   if (url) {
@@ -88,7 +91,7 @@ async function handleExtract(body) {
   }
 
   const sourceText = [caption, text].filter(Boolean).join("\n\n");
-  const { recipe, usage } = await extractRecipe(sourceText);
+  const { recipe, usage } = await extractRecipe(sourceText, image);
   return { caption, author, recipe, usage };
 }
 
@@ -100,7 +103,7 @@ function describeKitchen(kitchen) {
 
 // "What can I make?": recipe ideas built mostly from what the user already has.
 async function handleSuggest(body) {
-  const { kitchen = [], craving = "" } = JSON.parse(body || "{}");
+  const { kitchen = [], staples = [], craving = "" } = JSON.parse(body || "{}");
   if (!kitchen.length && !craving) throw new Error("Add a few things to My Kitchen first, or name a dish you're craving.");
 
   const prompt = `You help busy people meal prep. Suggest 3 recipes.
@@ -110,14 +113,17 @@ Return ONLY a JSON object with this shape:
 Rules:
 - Use as many ingredients from the kitchen as possible. Prioritize items marked "(use soon)".
 - Pick dishes that are good for meal prep: they keep 3-4 days in the fridge and reheat well.
-- Assume salt, pepper, cooking oil and water are available.
+- Assume salt, pepper, cooking oil and water are available, plus the pantry staples listed below. Use them freely.
 - "uses_up" lists kitchen items marked "(use soon)" that the recipe uses.
-- "to_buy" lists ingredients the recipe needs that are NOT in the kitchen. Keep it short.
+- "to_buy" lists ingredients the recipe needs that are NOT in the kitchen or pantry staples. Keep it short.
 - Keep steps short and clear, 4-8 steps.
 ${craving ? `- The user is craving: "${craving}". All 3 recipes should match that request.` : ""}
 
 Kitchen:
-${describeKitchen(kitchen)}`;
+${describeKitchen(kitchen)}
+
+Pantry staples (always stocked):
+${staples.join(", ") || "(none listed)"}`;
 
   const { json, usage } = await askModel(prompt);
   return { recipes: json.recipes || [], usage };
@@ -125,7 +131,7 @@ ${describeKitchen(kitchen)}`;
 
 // Grocery list: what the planned recipes need, scaled to portions, minus what's already in the kitchen.
 async function handleGrocery(body) {
-  const { recipes = [], kitchen = [] } = JSON.parse(body || "{}");
+  const { recipes = [], kitchen = [], staples = [] } = JSON.parse(body || "{}");
   if (!recipes.length) throw new Error("Add at least one recipe to your plan first.");
 
   const planText = recipes.map((r) =>
@@ -141,7 +147,7 @@ Rules:
 - Scale each recipe's ingredients to the number of portions asked for.
 - Combine the same ingredient across recipes into one line.
 - Subtract what is already in the kitchen. Leave an item out if the kitchen has enough; if it has some, list only what's missing.
-- Skip salt, pepper, cooking oil and water.
+- Skip salt, pepper, cooking oil, water, and anything in the pantry staples list.
 - Give specific quantities in the units people buy at a store (e.g. "1.5 lbs", "1 bunch", "2 cans (15 oz)", "1 dozen").
   Never list less than one store unit: a recipe needing 1 tsp cumin means "1 jar" on the list.
 - "quantity" is only the amount, never the item name: {"item": "limes", "quantity": "2"}, not {"item": "limes", "quantity": "2 limes"}.
@@ -152,7 +158,10 @@ Meal prep plan:
 ${planText}
 
 Kitchen:
-${describeKitchen(kitchen)}`;
+${describeKitchen(kitchen)}
+
+Pantry staples (always stocked, never put these on the list):
+${staples.join(", ") || "(none listed)"}`;
 
   const { json, usage } = await askModel(prompt);
   return { sections: json.sections || [], usage };
