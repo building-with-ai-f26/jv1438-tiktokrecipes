@@ -158,8 +158,7 @@
         <h2>🧂 Pantry staples</h2>
         <p class="hint">Spices, oils and sauces you always keep around. Set them once: recipes use them and the grocery list skips them. Running low? Tap 🛒 to add one to your list.</p>
         <div id="my-staples" class="chips"></div>
-        <h3>Tap to add</h3>
-        <div id="staple-ideas" class="chips"></div>
+        <div id="staple-ideas"></div>
         <form id="staple-form" class="row" style="margin-top:12px">
           <input id="staple-name" type="text" placeholder="Add your own (garam masala, sesame oil...)" autocomplete="off" />
           <button type="submit" class="ghost small">Add</button>
@@ -182,7 +181,7 @@
       <div class="options">
         <form id="suggest-form" class="card">
           <h2>✨ What can I make?</h2>
-          <p class="hint">Recipe ideas from what's in your kitchen.</p>
+          <p class="hint">Tasty recipes built around what you have. A few things to buy is fine.</p>
           <input id="craving" type="text" placeholder="Craving anything? (optional) e.g. spicy, tacos" />
           <button id="suggest-btn" type="submit" class="wide">Give me ideas</button>
         </form>
@@ -435,7 +434,11 @@
 
     // ---------- Pantry staples ----------
     // Always-stocked items: no amounts, never used up by "I cooked this".
-    const STAPLE_IDEAS = ["salt", "black pepper", "olive oil", "vegetable oil", "butter", "garlic powder", "onion powder", "cumin", "paprika", "chili flakes", "oregano", "cinnamon", "Italian seasoning", "curry powder", "soy sauce", "vinegar", "hot sauce", "honey", "sugar", "flour"];
+    const STAPLE_IDEAS = {
+      "🧂 Basics & spices": ["salt", "black pepper", "olive oil", "vegetable oil", "butter", "garlic powder", "onion powder", "cumin", "paprika", "smoked paprika", "chili flakes", "oregano", "cinnamon", "Italian seasoning", "curry powder", "honey", "sugar", "brown sugar", "flour"],
+      "🥫 Sauces & condiments": ["soy sauce", "hot sauce", "sriracha", "ketchup", "mayo", "mustard", "Dijon mustard", "BBQ sauce", "ranch", "white vinegar", "apple cider vinegar", "rice vinegar", "balsamic vinegar", "sesame oil", "oyster sauce", "hoisin sauce", "fish sauce", "gochujang", "chili crisp", "teriyaki sauce", "Worcestershire sauce", "maple syrup", "peanut butter", "tahini", "salsa", "pesto"],
+      "🍛 Indian pantry": ["turmeric", "garam masala", "red chili powder", "Kashmiri chili powder", "coriander powder", "cumin seeds", "mustard seeds", "hing (asafoetida)", "kasuri methi", "fenugreek seeds", "cardamom", "cloves", "bay leaves", "curry leaves", "chaat masala", "amchur", "ghee", "ginger garlic paste", "tamarind paste", "besan", "basmati rice", "toor dal", "moong dal", "chana dal"],
+    };
     const hasStaple = (name) => state.staples.some((s) => norm(s) === norm(name));
 
     function addStaple(name) {
@@ -467,12 +470,16 @@
         h("button", { type: "button", title: "Running low: add to grocery list", textContent: "🛒", onclick: () => restock(name) }),
         h("button", { type: "button", title: "Remove", textContent: "✕", onclick: () => { state.staples = state.staples.filter((s) => s !== name); save(); } })
       )));
+      // Starter ideas, grouped; ones you already have are hidden.
       const ideas = $("staple-ideas");
       ideas.innerHTML = "";
-      STAPLE_IDEAS.filter((n) => !hasStaple(n)).forEach((name) =>
-        ideas.append(h("button", { type: "button", class: "staple", textContent: "+ " + name, onclick: () => addStaple(name) }))
-      );
-      ideas.previousElementSibling.classList.toggle("hidden", !ideas.children.length);
+      for (const [group, names] of Object.entries(STAPLE_IDEAS)) {
+        const left = names.filter((n) => !hasStaple(n));
+        if (!left.length) continue;
+        ideas.append(h("h3", { textContent: group }), h("div", { class: "chips" },
+          left.map((name) => h("button", { type: "button", class: "staple", textContent: "+ " + name, onclick: () => addStaple(name) }))
+        ));
+      }
     }
 
     // ---------- Plan ----------

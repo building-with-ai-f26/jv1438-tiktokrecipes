@@ -52,10 +52,12 @@ async function askModelOnce(content) {
   // Models sometimes wrap JSON in ```json fences or add a sentence around it; keep just the {...} part.
   const text = data.choices?.[0]?.message?.content || "";
   const start = text.indexOf("{"), end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("The AI didn't return a usable answer. Try again.");
   try {
+    if (start === -1 || end === -1) throw new Error("no JSON object found");
     return { json: JSON.parse(text.slice(start, end + 1)), usage: data.usage };
-  } catch {
+  } catch (err) {
+    // Log what came back so a bad answer can be debugged from the terminal.
+    console.error(`Unusable reply from ${data.model} (${err.message}): ${text.slice(0, 200) || "(empty)"}`);
     throw new Error("The AI didn't return a usable answer. Try again.");
   }
 }
@@ -106,17 +108,20 @@ async function handleSuggest(body) {
   const { kitchen = [], staples = [], craving = "" } = JSON.parse(body || "{}");
   if (!kitchen.length && !craving) throw new Error("Add a few things to My Kitchen first, or name a dish you're craving.");
 
-  const prompt = `You help busy people meal prep. Suggest 3 recipes.
+  const prompt = `You are a meal prep coach who suggests genuinely delicious recipes. Suggest 3 recipes.
 Return ONLY a JSON object with this shape:
 {"recipes": [{"title": string, "servings": number, "ingredients": [{"item": string, "quantity": string}], "steps": [string], "uses_up": [string], "to_buy": [string]}]}
 
 Rules:
-- Use as many ingredients from the kitchen as possible. Prioritize items marked "(use soon)".
+- Taste comes first. Pick well-loved, flavorful dishes people actually crave (good seasoning, aromatics, a sauce or acid, contrasting textures). Never force unrelated kitchen items together just to use them up.
+- Build each recipe around 1-3 kitchen items that fit it naturally, especially ones marked "(use soon)". Buying other ingredients is fine and expected (up to about 6) when it makes the dish better.
 - Pick dishes that are good for meal prep: they keep 3-4 days in the fridge and reheat well.
+- Make the 3 recipes different from each other (cuisine, protein or style).
 - Assume salt, pepper, cooking oil and water are available, plus the pantry staples listed below. Use them freely.
+- Give every ingredient a specific quantity.
 - "uses_up" lists kitchen items marked "(use soon)" that the recipe uses.
-- "to_buy" lists ingredients the recipe needs that are NOT in the kitchen or pantry staples. Keep it short.
-- Keep steps short and clear, 4-8 steps.
+- "to_buy" lists every ingredient the recipe needs that is NOT in the kitchen or pantry staples.
+- Steps are short and clear, 4-8 steps, with times and temperatures.
 ${craving ? `- The user is craving: "${craving}". All 3 recipes should match that request.` : ""}
 
 Kitchen:
