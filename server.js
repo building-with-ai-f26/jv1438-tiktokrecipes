@@ -144,6 +144,7 @@ Rules:
 - Skip salt, pepper, cooking oil and water.
 - Give specific quantities in the units people buy at a store (e.g. "1.5 lbs", "1 bunch", "2 cans (15 oz)", "1 dozen").
   Never list less than one store unit: a recipe needing 1 tsp cumin means "1 jar" on the list.
+- "quantity" is only the amount, never the item name: {"item": "limes", "quantity": "2"}, not {"item": "limes", "quantity": "2 limes"}.
 - "for" lists the recipe titles that need the item.
 - Section names must be from: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry, Spices & Sauces, Frozen, Other. Leave out empty sections.
 

@@ -571,7 +571,7 @@
       let section = "";
       for (const i of state.grocery.items.filter((i) => !i.done)) {
         if (i.section !== section) { section = i.section; lines.push("", section.toUpperCase()); }
-        lines.push("☐ " + (i.quantity ? i.quantity + " " : "") + i.item);
+        lines.push("☐ " + groceryLabel(i));
       }
       try { await navigator.clipboard.writeText(lines.join("\n")); toast("Copied! Paste it in Notes or a text 📋"); }
       catch { toast("Couldn't copy on this browser"); }
@@ -592,6 +592,12 @@
       confetti();
       toast(bought.length + " items stocked in your kitchen 🧊");
     });
+
+    // "2 limes" + "limes" would read "2 limes limes", so drop the name if the amount already has it.
+    function groceryLabel(i) {
+      const q = i.quantity || "";
+      return norm(q).endsWith(norm(i.item)) ? q : (q ? q + " " : "") + i.item;
+    }
 
     function renderGrocery() {
       const box = $("grocery-list");
@@ -619,7 +625,7 @@
           h("label", { class: "g-item" + (i.done ? " done" : "") },
             h("input", { type: "checkbox", checked: i.done, onchange: () => { i.done = !i.done; save(); } }),
             h("div", {},
-              h("div", { class: "what", textContent: (i.quantity ? i.quantity + " " : "") + i.item }),
+              h("div", { class: "what", textContent: groceryLabel(i) }),
               i.for?.length ? h("div", { class: "for", textContent: "for " + i.for.join(", ") }) : null
             )
           )
