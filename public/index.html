@@ -213,8 +213,8 @@
       <div class="card">
         <h2>🛒 Grocery list</h2>
         <p class="hint">Only what your plan needs that isn't already in your kitchen.</p>
-        <div id="grocery-stale" class="stale hidden">Your plan or kitchen changed. Rebuild to update the list.</div>
-        <button id="grocery-btn" type="button" class="wide">Build my list</button>
+        <div id="grocery-status" class="stale hidden"></div>
+        <button id="grocery-btn" type="button" class="ghost small hidden">🔄 Refresh list</button>
         <p id="grocery-error" class="error hidden"></p>
         <div id="grocery-list"></div>
         <form id="extra-form" class="row" style="margin-top:14px">
@@ -255,6 +255,7 @@
     function save() {
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {}
       render();
+      scheduleGrocery();
     }
 
     // ---------- Small helpers ----------
@@ -643,18 +644,50 @@
     // Sections people add to by hand; these survive a rebuild of the AI list.
     const MANUAL_SECTIONS = ["Restock staples", "Extras"];
 
-    $("grocery-btn").addEventListener("click", () => {
-      busy($("grocery-btn"), "Writing your list... ✍️", $("grocery-error"), async () => {
+    // The list rebuilds itself whenever the plan, kitchen or staples change.
+    // It waits a moment so several quick taps (like portions +/−) become one AI call.
+    let groceryTimer = null, groceryBusy = false, failedSig = null;
+
+    function scheduleGrocery() {
+      const sig = signature();
+      if (state.grocery?.sig === sig || sig === failedSig) return;
+      if (!state.plan.length) {
+        // No recipes: keep only the items added by hand, no AI call needed.
+        if (state.grocery) { state.grocery.items = state.grocery.items.filter((i) => MANUAL_SECTIONS.includes(i.section)); state.grocery.sig = sig; save(); }
+        return;
+      }
+      clearTimeout(groceryTimer);
+      groceryTimer = setTimeout(buildGrocery, 1500);
+    }
+
+    async function buildGrocery() {
+      if (groceryBusy) return; // the finished call checks again and catches up
+      groceryBusy = true;
+      const sig = signature();
+      $("grocery-error").classList.add("hidden");
+      render();
+      try {
         const recipes = state.plan.map(({ title, servings, portions, ingredients }) => ({ title, servings, portions, ingredients }));
         const kitchen = state.kitchen.map(({ name, qty }) => ({ name, qty }));
         const data = await post("/api/grocery", { recipes, kitchen, staples: state.staples });
-        const items = data.sections.flatMap((s) => s.items.map((i) => ({ ...i, id: newId(), section: s.name, done: false })));
+        // Keep ticks on items that were already in the cart.
+        const ticked = new Set((state.grocery?.items || []).filter((i) => i.done).map((i) => norm(i.item)));
+        const items = data.sections.flatMap((s) => s.items.map((i) => ({ ...i, id: newId(), section: s.name, done: ticked.has(norm(i.item)) })));
         const extras = state.grocery ? state.grocery.items.filter((i) => MANUAL_SECTIONS.includes(i.section)) : [];
-        state.grocery = { items: [...items, ...extras], sig: signature() };
-        save();
-        if (!items.length) toast("Your kitchen already has everything! 🎉");
-      });
-    });
+        state.grocery = { items: [...items, ...extras], sig };
+        failedSig = null;
+        if (!document.getElementById("page-grocery").classList.contains("active")) toast("🛒 Grocery list updated");
+      } catch (err) {
+        failedSig = sig; // don't retry the same thing in a loop; Refresh tries again
+        $("grocery-error").textContent = err.message;
+        $("grocery-error").classList.remove("hidden");
+      } finally {
+        groceryBusy = false;
+        save(); // also re-checks: if the plan changed mid-call, this schedules the next update
+      }
+    }
+
+    $("grocery-btn").addEventListener("click", () => { failedSig = null; buildGrocery(); });
 
     $("extra-form").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -704,9 +737,10 @@
       const box = $("grocery-list");
       box.innerHTML = "";
       const g = state.grocery;
-      $("grocery-btn").textContent = g ? "🔄 Rebuild my list" : "Build my list";
-      $("grocery-btn").classList.toggle("hidden", !state.plan.length);
-      $("grocery-stale").classList.toggle("hidden", !g || !state.plan.length || g.sig === signature());
+      const updating = groceryBusy || (state.plan.length && g?.sig !== signature() && signature() !== failedSig);
+      $("grocery-status").textContent = groceryBusy ? "✍️ Updating your list to match your plan... (the free AI can take a minute)" : "⏳ Your plan changed, updating in a moment...";
+      $("grocery-status").classList.toggle("hidden", !updating);
+      $("grocery-btn").classList.toggle("hidden", !state.plan.length || groceryBusy);
       $("grocery-actions").classList.toggle("hidden", !g || !g.items.length);
 
       if (!state.plan.length && !g?.items.length) {
@@ -715,7 +749,7 @@
         return;
       }
       if (!g) return;
-      if (!g.items.length) { box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "🎉" }), "Nothing to buy. Time to cook!")); return; }
+      if (!g.items.length && !updating) { box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "🎉" }), "Nothing to buy. Time to cook!")); return; }
 
       const doneCount = g.items.filter((i) => i.done).length;
       box.append(h("p", { class: "hint", style: "margin-top:12px", textContent: `${doneCount} of ${g.items.length} in your cart` }));
@@ -744,10 +778,11 @@
       $("badge-kitchen").textContent = state.kitchen.length || "";
       $("badge-plan").textContent = state.plan.length || "";
       const toBuy = state.grocery ? state.grocery.items.filter((i) => !i.done).length : 0;
-      $("badge-grocery").textContent = toBuy || "";
+      $("badge-grocery").textContent = groceryBusy ? "⏳" : toBuy || "";
       document.querySelectorAll(".badge").forEach((b) => b.classList.toggle("hidden", !b.textContent));
     }
     render();
+    scheduleGrocery(); // catch up if the plan changed since the list was last built
   </script>
 </body>
 </html>
