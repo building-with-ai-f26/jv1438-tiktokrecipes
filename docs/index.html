@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TikTok Recipe Extractor · Building with AI (Fall 2026)</title>
+  <title>Fridge to Feast · Building with AI (Fall 2026)</title>
 
   <!-- Week 1: create your PostHog account only.
        Build 2: paste your project's current PostHog web snippet here,
@@ -144,8 +144,8 @@
     <!-- HERO / PRODUCT PITCH -->
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
-      <h1>TikTok Recipe Extractor</h1>
-      <p class="tagline">This is for anyone that wants to collect the recipe of a TikTok video to make their life easier and get straight to cooking faster</p>
+      <h1>🥕 Fridge to Feast</h1>
+      <p class="tagline">Meal prep for busy people: tell it what's in your fridge, pick recipes (or bring one from TikTok), and get a grocery list with exact amounts. Then update your kitchen in one tap so it's ready for next week.</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -157,12 +157,13 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 1: local prototype<br />
-        <strong>Demo:</strong> Paste a TikTok link → get the ingredients and steps → tick what's already in your fridge → get a "still need to buy" list. Screenshots from a real run below.
+        <strong>Current Status:</strong> Build 2: local meal prep app (pivoted from the Build 1 TikTok extractor)<br />
+        <strong>Demo:</strong> ① Add what's in your kitchen (mark things to use up soon) → ② Plan: get recipe ideas from what you have, or import a recipe from a TikTok link → set portions for the week → ③ Grocery list with specific amounts, minus what you already have → ④ "I bought these" moves groceries into your kitchen, "I cooked this" takes used-up items out. Screenshots from a real run with the free model below.
       </p>
-      <div class="grid-2">
-        <img src="prototype-screenshot-1.png" alt="Prototype: TikTok link pasted, ingredients extracted for a summery salad" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
-        <img src="prototype-screenshot-2.png" alt="Prototype: fridge checklist split into already-have and still-need-to-buy lists" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+      <div class="grid-2" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <img src="fridge-to-feast-kitchen.png" alt="My Kitchen tab: items grouped by category with quantities and a use-soon flag on spinach" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+        <img src="fridge-to-feast-plan.png" alt="Plan tab: weekly goal progress bar, recipe ideas that use up spinach, and three recipes in the meal prep" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+        <img src="fridge-to-feast-grocery.png" alt="Grocery list tab: items grouped by store section with amounts and which recipe needs them" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
       </div>
     </section>
 
@@ -172,21 +173,23 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> Busy people that need convenient recipes to meal prep, and don't have time to rewatch dozens of TikTok videos, then create an ingredient list, then compare it to groceries they have, then cook</p>
-      <p><strong>The painful "Before" workflow:</strong> Today users have to rewatch TikTok videos and manually note down what ingredients to add to the grocery list before they can get to cooking</p>
-      <p><strong>The "After" workflow with this product:</strong> This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already</p>
+      <p><strong>Who is this for?</strong> Busy people who want to meal prep for the week but don't have time to figure out what to cook, check what's already in the fridge, and work out exactly what to buy.</p>
+      <p><strong>The painful "Before" workflow:</strong> Today users dig through the fridge and pantry, scroll TikTok or Google for recipes, rewatch videos to write down ingredients, guess how much to buy for the whole week, and then do it all again next week from scratch. Food goes bad because nobody remembers what needed using up.</p>
+      <p><strong>The "After" workflow with this product:</strong> (1) Keep a saved list of what's in your kitchen, with a flag on things to use up soon. (2) Build a meal prep plan by asking "what can I make with what I have?" or by bringing a recipe you want, like a TikTok link. (3) Get a grocery list with specific amounts, scaled to how many meals and people you're prepping for, minus what you already have. (4) Tap "I bought these" or "I cooked this" to keep your kitchen up to date for next time.</p>
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> Extracts key ingredients and step by step recipe without having to rewatch the video </li>
+        <li><strong>In Scope (Core Workflow):</strong> Kitchen inventory → meal prep plan (recipe ideas from what you have, or a TikTok/pasted recipe) → grocery list with specific amounts → one-tap kitchen updates after shopping and cooking</li>
+        <li><strong>Later (future build):</strong> Snap a photo of your fridge or pantry to fill in the kitchen automatically. Typing it in by hand comes first.</li>
         <li><strong>Out of Scope #1:</strong> Calorie and macro tracking</li>
-        <li><strong>Out of Scope #2:</strong> Recipe discovery feed</li>
-        <li><strong>Out of Scope #3:</strong> Social feed with other users</li>
+        <li><strong>Out of Scope #2:</strong> Accounts, logins, and syncing across devices (the kitchen is saved in your browser)</li>
+        <li><strong>Out of Scope #3:</strong> Store prices and online grocery ordering</li>
+        <li><strong>Out of Scope #4:</strong> Social feed with other users</li>
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> That the recipe is written in the TikTok caption. Many creators only say the recipe out loud, so the caption often lists ingredients but no steps (or nothing at all). Reading the caption also relies on TikTok's public page format, which is unofficial and could change.</p>
-      <p><strong>Simple Architecture:</strong> [TikTok link + optional pasted text] → [Local Node.js server reads the caption from the TikTok page] → [Free AI model via OpenRouter extracts ingredients + steps as JSON] → [Web page shows the recipe and a fridge checklist → have / need-to-buy lists]</p>
+      <p><strong>Riskiest Assumption:</strong> That a free AI model can turn a meal plan into a grocery list with correct, store-realistic amounts: scaling recipes to the right number of portions, combining the same ingredient across recipes, and subtracting what's already in the kitchen when units don't match ("1 bag spinach" vs "3 cups"). Early runs showed real problems ("0.125 tsp cumin" instead of "1 jar", "1 lime lime"), which the prompt and page now guard against. Second risk: busy people will only come back if keeping the kitchen list up to date is close to effortless. Third: free models are slow (often 1–2 minutes) and sometimes return an empty answer, so the server retries once. TikTok captions still often leave out steps, so pasted text remains a fallback.</p>
+      <p><strong>Simple Architecture:</strong> [Kitchen list, plan and grocery list saved in the browser (localStorage)] → [Local Node.js server, no packages] → [Free AI model via OpenRouter, three JSON jobs: <code>/api/suggest</code> recipe ideas from the kitchen, <code>/api/extract</code> recipe from a TikTok caption or pasted text, <code>/api/grocery</code> scaled grocery list minus the kitchen] → [Web page: Kitchen / Plan / Grocery List tabs; "I bought these" and "I cooked this" update the kitchen]</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -218,7 +221,7 @@
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> A local prototype (screenshots above). Paste a TikTok link, and the app reads the video caption, uses a free AI model to pull out the ingredients and steps, then asks what's already in your fridge and splits the list into "already have" and "still need to buy". Tested on a real summer salad TikTok.</li>
+          <li><strong>What shipped:</strong> A local prototype (<a href="prototype-screenshot-1.png">screenshot 1</a>, <a href="prototype-screenshot-2.png">screenshot 2</a>). Paste a TikTok link, and the app reads the video caption, uses a free AI model to pull out the ingredients and steps, then asks what's already in your fridge and splits the list into "already have" and "still need to buy". Tested on a real summer salad TikTok.</li>
           <li><strong>Things learned with AI:</strong> I learned the basics of building with AI, including the difference between Git and GitHub, how to use the terminal, and how important it is to hide your API key in .env.</li>
           <li><strong>What broke / changed in PRD:</strong> TikTok's official caption endpoint (oEmbed) no longer returns captions, so the app reads the caption from the public video page instead. In the salad test, the caption listed the ingredients but no steps: the recipe was spoken, not written. That became my riskiest assumption. The first free model was overloaded, so I switched to OpenRouter's auto-picked free model. I also changed the flow so the fridge question comes <em>after</em> the ingredients are shown, as a checklist.</li>
           <li><strong>Cost & time this week:</strong> $3.08 rough allocation of my $200/yr Claude subscription (~40% project share × 2 weeks since Oct 27 setup; not measured token spend or an extra bill) + $0.00 API (free OpenRouter model) · 5–7 hours</li>
@@ -228,8 +231,8 @@
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [Local working slice, PostHog verified on this page and the local app, PRD v2, and local setup in AGENTS.md]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
+          <li><strong>What shipped:</strong> Pivoted the app into <strong>Fridge to Feast</strong>, a meal prep planner (screenshots above): a saved kitchen inventory with "use it up soon" flags, quick-add staples and paste-a-list; recipe ideas from what's in the kitchen (with an optional craving); the Build 1 TikTok import kept as a way to bring in a recipe; a weekly goal (meals × people) with portions per recipe; a grocery list with specific amounts grouped by store section that you can tick off, copy, and restock from with one tap ("I bought these"); and "I cooked this" to clear used-up items. [PostHog: not yet installed]</li>
+          <li><strong>What broke / changed in PRD:</strong> The target user is the same (busy people who meal prep), but the job changed from "get one TikTok recipe" to "plan the week's meal prep from what I already have". TikTok import is now one way to add a recipe instead of the whole product. Fridge photo scanning is pushed to a future build so the manual flow can be tested first. In testing, the free model sometimes returned empty answers (the server now retries once), took 1–2 minutes, gave unrealistic amounts ("0.125 tsp cumin") and doubled names ("1 lime lime"). I tightened the grocery prompt and added a page-side fix. The riskiest assumption is now the accuracy of the grocery amounts.</li>
           <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
         </ul>
       </div>

@@ -1,6 +1,6 @@
-# TikTok Recipe Extractor
+# 🥕 Fridge to Feast
 
-> **One-line pitch:** This tool will allow users to understand what ingredients are needed for a recipe, see the written steps, and compare it to what they have in their fridge already
+> **One-line pitch:** Meal prep for busy people: keep a list of what's in your kitchen, plan the week's recipes (ideas from what you have, or a TikTok recipe), get a grocery list with exact amounts, and update your kitchen in one tap.
 
 - **Builder:** Juhi Vyas (`@jv1438`)
 - **Pod:** Pod M5
@@ -46,5 +46,15 @@ node --env-file=.env server.js
 ```
 
 Needs Node.js 20.6 or newer. No `npm install` required.
+
+### How the app works
+
+| Tab | What it does |
+| --- | --- |
+| 🧊 **Kitchen** | Add what you have (typed, quick-add buttons, or paste a list). Flag ⏰ items to use up soon. Saved in your browser. |
+| 🍳 **Plan** | Set meals × people for the week. Get recipe ideas from your kitchen, or import one from a TikTok link or pasted text. Set portions per recipe. "I cooked this" clears used-up items. |
+| 🛒 **List** | Grocery list scaled to your portions, minus what you have, grouped by store section. Tick items off, copy the list, and "I bought these" moves them into your kitchen. |
+
+Server endpoints in `server.js`: `/api/suggest`, `/api/extract` (TikTok), `/api/grocery`. The free model (`openrouter/free`) can take 1–2 minutes per request.
 
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.
