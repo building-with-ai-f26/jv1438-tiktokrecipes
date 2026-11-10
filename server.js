@@ -1,4 +1,4 @@
-// TikTok Recipe Extractor — local prototype server (no dependencies).
+// Fridge to Feast — local prototype server (no dependencies).
 // Run: node --env-file=.env server.js   then open http://localhost:3000
 
 const http = require("http");
@@ -24,6 +24,26 @@ async function getTikTokCaption(videoUrl) {
   }
 }
 
+// Send one prompt to the model and parse the JSON it returns. Shared by every AI feature.
+async function askModel(prompt) {
+  if (!API_KEY || API_KEY.includes("replace-with-your-key")) {
+    throw new Error("Missing OPENROUTER_API_KEY. Add your key to .env and restart the server.");
+  }
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: prompt }] }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error("OpenRouter error: " + (data.error?.message || res.status));
+
+  // Models sometimes wrap JSON in ```json fences or add a sentence around it; keep just the {...} part.
+  const text = data.choices?.[0]?.message?.content || "";
+  const start = text.indexOf("{"), end = text.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("The AI didn't return a usable answer. Try again.");
+  return { json: JSON.parse(text.slice(start, end + 1)), usage: data.usage };
+}
+
 // Step 2: ask the AI model to turn the caption (and any pasted text) into a structured recipe.
 async function extractRecipe(sourceText) {
   const prompt = `You extract recipes from TikTok video captions and transcripts.
@@ -38,24 +58,12 @@ Rules:
 Source text:
 """${sourceText}"""`;
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: "Bearer " + API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: prompt }] }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error("OpenRouter error: " + (data.error?.message || res.status));
-
-  // Models sometimes wrap JSON in ```json fences; strip them before parsing.
-  const text = data.choices[0].message.content.replace(/```(json)?/g, "").trim();
-  return { recipe: JSON.parse(text), usage: data.usage };
+  const { json, usage } = await askModel(prompt);
+  return { recipe: json, usage };
 }
 
 async function handleExtract(body) {
   const { url, text } = JSON.parse(body || "{}");
-  if (!API_KEY || API_KEY.includes("replace-with-your-key")) {
-    throw new Error("Missing OPENROUTER_API_KEY. Add your key to .env and restart the server.");
-  }
   if (!url && !text) throw new Error("Paste a TikTok link or the recipe text.");
 
   let caption = "", author = "";
@@ -69,17 +77,84 @@ async function handleExtract(body) {
   return { caption, author, recipe, usage };
 }
 
+// Short text version of the kitchen for prompts, e.g. "- 2 lbs chicken thighs (use soon)".
+function describeKitchen(kitchen) {
+  if (!kitchen.length) return "(nothing listed)";
+  return kitchen.map((k) => `- ${k.qty ? k.qty + " " : ""}${k.name}${k.useSoon ? " (use soon)" : ""}`).join("\n");
+}
+
+// "What can I make?": recipe ideas built mostly from what the user already has.
+async function handleSuggest(body) {
+  const { kitchen = [], craving = "" } = JSON.parse(body || "{}");
+  if (!kitchen.length && !craving) throw new Error("Add a few things to My Kitchen first, or name a dish you're craving.");
+
+  const prompt = `You help busy people meal prep. Suggest 3 recipes.
+Return ONLY a JSON object with this shape:
+{"recipes": [{"title": string, "servings": number, "ingredients": [{"item": string, "quantity": string}], "steps": [string], "uses_up": [string], "to_buy": [string]}]}
+
+Rules:
+- Use as many ingredients from the kitchen as possible. Prioritize items marked "(use soon)".
+- Pick dishes that are good for meal prep: they keep 3-4 days in the fridge and reheat well.
+- Assume salt, pepper, cooking oil and water are available.
+- "uses_up" lists kitchen items marked "(use soon)" that the recipe uses.
+- "to_buy" lists ingredients the recipe needs that are NOT in the kitchen. Keep it short.
+- Keep steps short and clear, 4-8 steps.
+${craving ? `- The user is craving: "${craving}". All 3 recipes should match that request.` : ""}
+
+Kitchen:
+${describeKitchen(kitchen)}`;
+
+  const { json, usage } = await askModel(prompt);
+  return { recipes: json.recipes || [], usage };
+}
+
+// Grocery list: what the planned recipes need, scaled to portions, minus what's already in the kitchen.
+async function handleGrocery(body) {
+  const { recipes = [], kitchen = [] } = JSON.parse(body || "{}");
+  if (!recipes.length) throw new Error("Add at least one recipe to your plan first.");
+
+  const planText = recipes.map((r) =>
+    `## ${r.title} (recipe serves ${r.servings || "unknown, estimate it"}; make ${r.portions} portions)\n` +
+    r.ingredients.map((i) => `- ${i.quantity ? i.quantity + " " : ""}${i.item}`).join("\n")
+  ).join("\n\n");
+
+  const prompt = `You make grocery lists for meal prep.
+Return ONLY a JSON object with this shape:
+{"sections": [{"name": string, "items": [{"item": string, "quantity": string, "for": [string]}]}]}
+
+Rules:
+- Scale each recipe's ingredients to the number of portions asked for.
+- Combine the same ingredient across recipes into one line.
+- Subtract what is already in the kitchen. Leave an item out if the kitchen has enough; if it has some, list only what's missing.
+- Skip salt, pepper, cooking oil and water.
+- Give specific quantities in the units people buy at a store (e.g. "1.5 lbs", "1 bunch", "2 cans (15 oz)", "1 dozen").
+- "for" lists the recipe titles that need the item.
+- Section names must be from: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry, Spices & Sauces, Frozen, Other. Leave out empty sections.
+
+Meal prep plan:
+${planText}
+
+Kitchen:
+${describeKitchen(kitchen)}`;
+
+  const { json, usage } = await askModel(prompt);
+  return { sections: json.sections || [], usage };
+}
+
+// POST routes: each takes the raw request body and returns an object to send back as JSON.
+const routes = { "/api/extract": handleExtract, "/api/suggest": handleSuggest, "/api/grocery": handleGrocery };
+
 const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     return fs.createReadStream(path.join(__dirname, "public", "index.html")).pipe(res);
   }
-  if (req.method === "POST" && req.url === "/api/extract") {
+  if (req.method === "POST" && routes[req.url]) {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", async () => {
       try {
-        const result = await handleExtract(body);
+        const result = await routes[req.url](body);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
       } catch (err) {
@@ -94,4 +169,4 @@ const server = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-server.listen(PORT, () => console.log(`Recipe Extractor running at http://localhost:${PORT} (model: ${MODEL})`));
+server.listen(PORT, () => console.log(`Fridge to Feast running at http://localhost:${PORT} (model: ${MODEL})`));
