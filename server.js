@@ -7,7 +7,7 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-4.5";
+const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5";
 
 // Step 1: get the video's caption from the public TikTok video page (no login needed).
 // The page embeds its data as JSON in a <script> tag. This is unofficial and may break if TikTok changes it.
@@ -31,7 +31,8 @@ async function askModel(content) {
   try {
     return await askModelOnce(content);
   } catch (err) {
-    if (err.message.startsWith("Missing OPENROUTER_API_KEY")) throw err;
+    // Only retry a bad answer; a missing key or an OpenRouter error (like no credits) won't fix itself.
+    if (!err.message.startsWith("The AI didn't return")) throw err;
     console.error("Retrying after: " + err.message);
     return await askModelOnce(content);
   }
