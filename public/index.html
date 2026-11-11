@@ -3,135 +3,786 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TikTok Recipe Extractor</title>
+  <title>Fridge to Feast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; color: #111827; line-height: 1.5; }
-    .container { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
-    h1 { margin: 0 0 4px; font-size: 28px; }
-    .sub { color: #4b5563; margin: 0 0 24px; }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-    label { display: block; font-weight: 600; margin: 12px 0 4px; }
-    .hint { font-weight: 400; color: #6b7280; font-size: 14px; }
-    input, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; }
-    textarea { min-height: 70px; }
-    button { margin-top: 16px; padding: 10px 18px; border: 0; border-radius: 8px; background: #1d63dc; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: wait; }
-    .error { color: #b91c1c; }
-    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-    .have li { color: #15803d; }
-    .need li { color: #b45309; }
-    .caption { color: #4b5563; font-size: 14px; white-space: pre-wrap; }
-    .hidden { display: none; }
-    #checklist label { font-weight: 400; margin: 6px 0; display: flex; gap: 8px; align-items: center; }
-    #checklist input { width: auto; }
+    :root {
+      --bg: #fff7ec; --card: #ffffff; --ink: #2a1e17; --muted: #7a6a5f; --line: #f1e3d3;
+      --tomato: #ff6b4a; --avocado: #2bb673; --sunny: #ffc83d; --berry: #7b5cff; --sky: #e9f4ff;
+      --shadow: 0 4px 0 #f0dcc6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+    h1, h2, h3, .tab, button { font-family: "Fredoka", "Nunito", sans-serif; }
+    .container { max-width: 760px; margin: 0 auto; padding: 20px 16px 100px; }
+
+    /* Header + tabs */
+    header { text-align: center; padding: 12px 0 8px; }
+    h1 { margin: 0; font-size: 34px; letter-spacing: -0.01em; }
+    h1 span { color: var(--tomato); }
+    .sub { margin: 2px 0 16px; color: var(--muted); font-weight: 600; }
+    nav { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; padding: 10px 0; background: var(--bg); }
+    .tab { flex: 1; padding: 12px 8px; border: 2px solid var(--ink); border-radius: 16px; background: var(--card); font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 3px 0 var(--ink); transition: transform .1s; color: var(--ink); }
+    .tab:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+    .tab.active { background: var(--sunny); }
+    .badge { display: inline-block; min-width: 22px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 12px; line-height: 20px; }
+    .page { display: none; animation: pop .25s ease; }
+    .page.active { display: block; }
+    @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* Cards, buttons, inputs */
+    .card { background: var(--card); border: 2px solid var(--line); border-radius: 22px; padding: 18px; margin: 14px 0; box-shadow: var(--shadow); }
+    .card h2 { margin: 0 0 4px; font-size: 22px; }
+    .card h3 { margin: 14px 0 6px; font-size: 17px; }
+    .hint { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .row > input[type=text], .row > input[type=url] { flex: 1 1 160px; }
+    input[type=text], input[type=url], textarea { width: 100%; padding: 12px 14px; border: 2px solid var(--line); border-radius: 14px; font: inherit; background: #fffdf9; color: var(--ink); }
+    input:focus, textarea:focus { outline: none; border-color: var(--sunny); }
+    textarea { min-height: 80px; resize: vertical; }
+    button { border: 0; border-radius: 14px; padding: 12px 18px; font-size: 16px; font-weight: 600; cursor: pointer; background: var(--tomato); color: #fff; box-shadow: 0 3px 0 #c94a2e; transition: transform .1s; }
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 #c94a2e; }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.green { background: var(--avocado); box-shadow: 0 3px 0 #1d8a55; }
+    button.purple { background: var(--berry); box-shadow: 0 3px 0 #5a3fd1; }
+    button.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); box-shadow: none; }
+    button.small { padding: 6px 12px; font-size: 14px; border-radius: 10px; }
+    button.wide { width: 100%; margin-top: 10px; }
+    .check { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--muted); }
+    details summary { cursor: pointer; font-weight: 700; color: var(--berry); margin: 8px 0; }
+
+    /* Kitchen */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .staple { background: var(--sky); color: var(--ink); box-shadow: none; padding: 6px 12px; font-size: 14px; border-radius: 999px; font-family: "Nunito", sans-serif; font-weight: 700; }
+    .cat { margin-top: 16px; }
+    .cat-title { font-family: "Fredoka", sans-serif; font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: #fffaf3; border: 2px solid var(--line); margin-bottom: 6px; }
+    .item.soon { border-color: var(--sunny); background: #fff4d4; }
+    .item .name { flex: 1; font-weight: 700; overflow-wrap: anywhere; }
+    .item .qty { width: 92px; padding: 6px 8px; border-radius: 10px; font-size: 14px; text-align: center; }
+    .step { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; background: var(--card); color: var(--ink); border: 2px solid var(--line); box-shadow: none; }
+    .clock { background: none; box-shadow: none; padding: 4px; font-size: 18px; filter: grayscale(1); opacity: .45; }
+    .clock.on { filter: none; opacity: 1; }
+    .staple.on { background: #fff0c2; border: 2px solid var(--sunny); padding: 4px 6px 4px 12px; display: inline-flex; align-items: center; gap: 2px; cursor: default; }
+    .staple.on button { background: none; box-shadow: none; padding: 2px 6px; font-size: 14px; color: var(--ink); }
+    .shot { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .shot img { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 2px solid var(--line); }
+    .file-btn { display: inline-block; padding: 8px 14px; border: 2px dashed var(--berry); border-radius: 14px; color: var(--berry); font-weight: 700; cursor: pointer; }
+    .empty { text-align: center; padding: 26px 10px; color: var(--muted); font-weight: 700; }
+    .empty .big { font-size: 46px; display: block; }
+
+    /* Plan */
+    .goal { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+    .stepper { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .stepper b { min-width: 24px; text-align: center; font-size: 20px; font-family: "Fredoka", sans-serif; }
+    .bar { height: 14px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+    .bar div { height: 100%; background: linear-gradient(90deg, var(--avocado), var(--sunny)); border-radius: 999px; transition: width .4s; }
+    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .options .card { margin: 0; }
+    .recipe { border: 2px solid var(--line); border-radius: 18px; padding: 14px; margin-top: 12px; background: #fffdf9; }
+    .recipe h3 { margin: 0 0 6px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .tag { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--sky); }
+    .tag.soon { background: #fff0c2; }
+    .tag.buy { background: #ffe1d9; }
+    .recipe ul, .recipe ol { margin: 4px 0 8px; padding-left: 22px; }
+
+    /* Grocery */
+    .g-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 4px; border-bottom: 2px dashed var(--line); cursor: pointer; }
+    .g-item input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--avocado); flex-shrink: 0; }
+    .g-item .what { font-weight: 700; }
+    .g-item .for { font-size: 13px; color: var(--muted); }
+    .g-item.done .what { text-decoration: line-through; color: var(--muted); }
+    .stale { background: #fff0c2; border-radius: 14px; padding: 10px 14px; font-weight: 700; margin: 10px 0; }
+    .error { color: #c0392b; font-weight: 700; }
+    .hidden { display: none !important; }
+
+    /* Toast, dialog, confetti */
+    #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 120px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-weight: 700; transition: transform .3s; z-index: 20; max-width: calc(100% - 32px); text-align: center; }
+    #toast.show { transform: translate(-50%, 0); }
+    dialog { border: 0; border-radius: 22px; padding: 20px; max-width: 420px; width: calc(100% - 32px); color: var(--ink); }
+    dialog::backdrop { background: rgba(42, 30, 23, .45); }
+    dialog label { display: flex; gap: 8px; align-items: center; padding: 6px 0; font-weight: 600; }
+    .confetti { position: fixed; top: -40px; font-size: 26px; pointer-events: none; z-index: 30; animation: fall 1.6s ease-in forwards; }
+    @keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: .8; } }
+    @media (max-width: 480px) { h1 { font-size: 28px; } .tab { font-size: 14px; padding: 10px 4px; } }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>TikTok Recipe Extractor</h1>
-    <p class="sub">Paste a TikTok link and get the ingredients and steps without rewatching.</p>
+    <header>
+      <h1>🥕 Fridge to <span>Feast</span></h1>
+      <p class="sub">Meal prep in minutes, not hours.</p>
+    </header>
 
-    <form id="form" class="card">
-      <label for="url">TikTok link</label>
-      <input id="url" type="url" placeholder="https://www.tiktok.com/@creator/video/123..." />
+    <nav>
+      <button class="tab active" data-page="kitchen">🧊 Kitchen<span id="badge-kitchen" class="badge"></span></button>
+      <button class="tab" data-page="plan">🍳 Plan<span id="badge-plan" class="badge"></span></button>
+      <button class="tab" data-page="grocery">🛒 List<span id="badge-grocery" class="badge"></span></button>
+    </nav>
 
-      <label for="text">Recipe text or transcript <span class="hint">(optional; helps when the caption is short)</span></label>
-      <textarea id="text" placeholder="Paste anything the creator says or writes..."></textarea>
+    <!-- 1. MY KITCHEN: what you already have -->
+    <section id="page-kitchen" class="page active">
+      <form id="add-form" class="card">
+        <h2>What's in your kitchen?</h2>
+        <p class="hint">Add what's in your fridge and pantry. It's saved, so next week you only update what changed.</p>
+        <div class="row">
+          <input id="add-name" type="text" placeholder="e.g. chicken thighs" autocomplete="off" />
+          <input id="add-qty" type="text" placeholder="2 lbs" style="flex:0 1 110px" autocomplete="off" />
+          <button type="submit">Add</button>
+        </div>
+        <label class="check" style="margin-top:8px"><input id="add-soon" type="checkbox" /> ⏰ Use it up soon</label>
 
-      <button id="submit" type="submit">Extract recipe</button>
-      <p id="error" class="error hidden"></p>
-    </form>
+        <h3>Quick add</h3>
+        <div id="staples" class="chips"></div>
 
-    <div id="result" class="card hidden">
-      <h2 id="title"></h2>
-      <p id="notes" class="hint"></p>
-      <h3>Ingredients in this video</h3>
-      <ul id="ingredients"></ul>
+        <details>
+          <summary>📝 Paste a whole list</summary>
+          <p class="hint">One item per line, like "2 lbs chicken" or "spinach".</p>
+          <textarea id="bulk" placeholder="2 lbs chicken thighs&#10;1 bag spinach&#10;6 eggs&#10;rice"></textarea>
+          <button id="bulk-add" type="button" class="purple small" style="margin-top:8px">Add all</button>
+        </details>
+      </form>
 
-      <h3>What do you already have in your fridge?</h3>
-      <p class="hint">Tick everything you have.</p>
-      <div id="checklist"></div>
-      <button id="compare" type="button">Make my grocery list</button>
-      <div id="comparison" class="cols hidden">
-        <div><h3>You already have</h3><ul id="have" class="have"></ul></div>
-        <div><h3>You still need to buy</h3><ul id="need" class="need"></ul></div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>My Kitchen</h2>
+          <button id="clear-kitchen" type="button" class="ghost small">Clear all</button>
+        </div>
+        <p class="hint">Tap ⏰ on things about to go bad, and recipe ideas will use them first.</p>
+        <div id="kitchen-list"></div>
       </div>
 
-      <h3>Steps</h3>
-      <ol id="steps"></ol>
-      <details>
-        <summary class="hint">Source caption</summary>
-        <p id="caption" class="caption"></p>
-      </details>
-    </div>
+      <div class="card">
+        <h2>🧂 Pantry staples</h2>
+        <p class="hint">Spices, oils and sauces you always keep around. Set them once: recipes use them and the grocery list skips them. Running low? Tap 🛒 to add one to your list.</p>
+        <div id="my-staples" class="chips"></div>
+        <div id="staple-ideas"></div>
+        <form id="staple-form" class="row" style="margin-top:12px">
+          <input id="staple-name" type="text" placeholder="Add your own (garam masala, sesame oil...)" autocomplete="off" />
+          <button type="submit" class="ghost small">Add</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2. PLAN: pick recipes for the week -->
+    <section id="page-plan" class="page">
+      <div class="card">
+        <h2>This week's goal</h2>
+        <div class="goal">
+          <div class="stepper">🍱 Meals <button class="step" data-goal="meals" data-d="-1">−</button><b id="goal-meals"></b><button class="step" data-goal="meals" data-d="1">+</button></div>
+          <div class="stepper">👥 People <button class="step" data-goal="people" data-d="-1">−</button><b id="goal-people"></b><button class="step" data-goal="people" data-d="1">+</button></div>
+        </div>
+        <div class="bar"><div id="goal-bar"></div></div>
+        <p id="goal-text" class="hint" style="margin-top:6px"></p>
+      </div>
+
+      <div class="options">
+        <form id="suggest-form" class="card">
+          <h2>✨ What can I make?</h2>
+          <p class="hint">Tasty recipes built around what you have. A few things to buy is fine.</p>
+          <input id="craving" type="text" placeholder="Craving anything? (optional) e.g. spicy, tacos" />
+          <button id="suggest-btn" type="submit" class="wide">Give me ideas</button>
+        </form>
+
+        <form id="extract-form" class="card">
+          <h2>📥 Add a recipe</h2>
+          <p class="hint">Paste a TikTok link, type or paste a recipe from anywhere, or upload a screenshot.</p>
+          <input id="url" type="url" placeholder="🎵 TikTok link (optional)" />
+          <textarea id="text" placeholder="Type or paste a recipe (optional)" style="margin-top:8px;min-height:60px"></textarea>
+          <div class="shot">
+            <label class="file-btn">📸 Add a screenshot<input id="shot-file" type="file" accept="image/*" class="hidden" /></label>
+            <img id="shot-preview" class="hidden" alt="Screenshot preview" />
+            <button id="shot-clear" type="button" class="ghost small hidden">✕</button>
+          </div>
+          <button id="extract-btn" type="submit" class="wide purple">Get the recipe</button>
+        </form>
+      </div>
+      <p id="plan-error" class="error hidden"></p>
+      <div id="ideas"></div>
+
+      <div class="card">
+        <h2>🗓️ My meal prep</h2>
+        <div id="plan-list"></div>
+      </div>
+    </section>
+
+    <!-- 3. GROCERY LIST: what to buy -->
+    <section id="page-grocery" class="page">
+      <div class="card">
+        <h2>🛒 Grocery list</h2>
+        <p class="hint">Only what your plan needs that isn't already in your kitchen.</p>
+        <div id="grocery-status" class="stale hidden"></div>
+        <button id="grocery-btn" type="button" class="ghost small hidden">🔄 Refresh list</button>
+        <p id="grocery-error" class="error hidden"></p>
+        <div id="grocery-list"></div>
+        <form id="extra-form" class="row" style="margin-top:14px">
+          <input id="extra" type="text" placeholder="Add something else (paper towels...)" />
+          <button type="submit" class="ghost small">Add</button>
+        </form>
+      </div>
+      <div id="grocery-actions" class="row hidden">
+        <button id="copy-btn" type="button" class="ghost" style="flex:1">📋 Copy list</button>
+        <button id="bought-btn" type="button" class="green" style="flex:2">✅ I bought these</button>
+      </div>
+    </section>
   </div>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
-    let ingredients = [];
+  <dialog id="cooked-dialog">
+    <form method="dialog">
+      <h2 style="margin-top:0">🍽️ Nice work, chef!</h2>
+      <p class="hint">Tick anything that's all gone and it comes off your kitchen list. To change amounts, use the +/− buttons on the Kitchen tab.</p>
+      <div id="cooked-items"></div>
+      <div class="row" style="margin-top:14px;justify-content:flex-end">
+        <button value="cancel" class="ghost small">Cancel</button>
+        <button value="ok" class="green small">Done</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast"></div>
 
-    function fillList(id, items) {
-      $(id).innerHTML = "";
-      for (const text of items) {
-        const li = document.createElement("li");
-        li.textContent = text;
-        $(id).appendChild(li);
+  <script>
+    // ---------- Saved state (lives in this browser's localStorage) ----------
+    const STORE_KEY = "fridge-to-feast";
+    const state = Object.assign(
+      { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [] },
+      load()
+    );
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+    }
+    function save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {}
+      render();
+      scheduleGrocery();
+    }
+
+    // ---------- Small helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const newId = () => Math.random().toString(36).slice(2, 9);
+    const norm = (s) => s.toLowerCase().trim();
+
+    // Build a DOM element: h("button", { class: "x", onclick: fn }, "text", childEl)
+    function h(tag, props = {}, ...children) {
+      const el = document.createElement(tag);
+      for (const [k, v] of Object.entries(props)) {
+        if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+        else if (k === "class") el.className = v;
+        else el[k] = v;
+      }
+      el.append(...children.flat().filter((c) => c != null && c !== false));
+      return el;
+    }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      $("toast").classList.add("show");
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => $("toast").classList.remove("show"), 2400);
+    }
+
+    function confetti(emojis = ["🥕", "🥦", "🍅", "🧀", "🥑", "🍋", "✨"]) {
+      for (let i = 0; i < 24; i++) {
+        const c = h("span", { class: "confetti", textContent: emojis[i % emojis.length] });
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.animationDelay = Math.random() * 0.4 + "s";
+        document.body.append(c);
+        setTimeout(() => c.remove(), 2200);
       }
     }
 
-    $("form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      $("submit").disabled = true;
-      $("submit").textContent = "Extracting...";
-      $("error").classList.add("hidden");
+    async function post(url, body) {
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      return data;
+    }
 
-      try {
-        const res = await fetch("/api/extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: $("url").value.trim(), text: $("text").value.trim() }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+    // Run an async action with a busy button and an error spot.
+    async function busy(button, label, errorEl, fn) {
+      const old = button.textContent;
+      button.disabled = true;
+      button.textContent = label;
+      errorEl.classList.add("hidden");
+      // Free AI models can take a minute or more, so reassure people on slow runs.
+      const slow = setTimeout(() => (button.textContent = "Still thinking... free AI can be slow ⏳"), 15000);
+      try { await fn(); }
+      catch (err) { errorEl.textContent = err.message; errorEl.classList.remove("hidden"); }
+      finally { clearTimeout(slow); button.disabled = false; button.textContent = old; render(); }
+    }
 
-        const r = data.recipe;
-        ingredients = r.ingredients.map((i) => (i.quantity ? i.quantity + " " : "") + i.item);
-        $("title").textContent = r.title || "Recipe";
-        $("notes").textContent = r.notes || "";
-        fillList("ingredients", ingredients);
-        fillList("steps", r.steps);
+    // ---------- Tabs ----------
+    document.querySelectorAll(".tab").forEach((tab) =>
+      tab.addEventListener("click", () => showPage(tab.dataset.page))
+    );
+    function showPage(name) {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.page === name));
+      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + name));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-        // Build one checkbox per ingredient so the user can say what they already have.
-        $("checklist").innerHTML = "";
-        ingredients.forEach((text, n) => {
-          const label = document.createElement("label");
-          const box = document.createElement("input");
-          box.type = "checkbox";
-          box.value = n;
-          label.append(box, document.createTextNode(text));
-          $("checklist").appendChild(label);
-        });
-        $("comparison").classList.add("hidden");
-        $("caption").textContent = data.caption || "(no caption, used pasted text)";
-        $("result").classList.remove("hidden");
-      } catch (err) {
-        $("error").textContent = err.message;
-        $("error").classList.remove("hidden");
-      } finally {
-        $("submit").disabled = false;
-        $("submit").textContent = "Extract recipe";
+    // ---------- Kitchen ----------
+    // Category is guessed from keywords so items group nicely without an AI call.
+    const CATEGORIES = [
+      ["🥬 Produce", "spinach lettuce kale onion garlic tomato pepper carrot broccoli potato apple banana lemon lime avocado cucumber mushroom zucchini herb cilantro parsley basil ginger berr fruit corn celery cabbage scallion squash"],
+      ["🍗 Protein", "chicken beef pork turkey salmon fish shrimp tuna tofu tempeh steak sausage bacon ham lamb ground"],
+      ["🧀 Dairy & eggs", "egg milk cheese yogurt butter cream feta parmesan mozzarella cheddar"],
+      ["🍝 Grains & bread", "rice pasta noodle bread tortilla oat quinoa flour couscous bagel wrap"],
+      ["🥫 Pantry & sauces", "bean lentil chickpea can oil vinegar sauce soy honey sugar salt spice cumin paprika broth stock peanut nut seed syrup mayo mustard ketchup salsa"],
+      ["🧊 Frozen", "frozen ice"],
+    ];
+    function categoryOf(name) {
+      const n = norm(name);
+      const hit = CATEGORIES.find(([, words]) => words.split(" ").some((w) => n.includes(w)));
+      return hit ? hit[0] : "🛒 Other";
+    }
+
+    const STAPLES = ["🥚 eggs", "🍚 rice", "🧅 onion", "🧄 garlic", "🍗 chicken breast", "🍝 pasta", "🥬 spinach", "🥛 milk", "🍅 tomatoes", "🥫 black beans", "🧀 cheddar", "🍠 sweet potato"];
+    STAPLES.forEach((s) => {
+      const name = s.slice(s.indexOf(" ") + 1);
+      $("staples").append(h("button", { type: "button", class: "staple", textContent: "+ " + s, onclick: () => addItem(name, "") }));
+    });
+
+    // Split "2 lbs chicken" into qty "2 lbs" and name "chicken".
+    const QTY_RE = /^([\d.\/½¼¾]+\s*(?:lbs?|oz|g|kg|ml|l|cups?|cans?|bags?|boxes|box|jars?|bottles?|tbsp|tsp|dozen|bunch(?:es)?|cloves?|heads?|packs?|pcs?)?\.?)\s+(.+)$/i;
+    function parseLine(line) {
+      const m = line.trim().match(QTY_RE);
+      return m ? { qty: m[1], name: m[2] } : { qty: "", name: line.trim() };
+    }
+
+    // Add an item; if it's already there, add the amounts together when they share a unit.
+    function addItem(name, qty, useSoon = false) {
+      name = name.trim();
+      if (!name) return;
+      const existing = state.kitchen.find((k) => norm(k.name) === norm(name));
+      if (existing) {
+        existing.qty = combineQty(existing.qty, qty);
+        existing.useSoon = existing.useSoon || useSoon;
+      } else {
+        state.kitchen.push({ id: newId(), name, qty: qty.trim(), useSoon, cat: categoryOf(name) });
       }
+      save();
+      toast("Added " + name + " 👍");
+    }
+    function combineQty(a, b) {
+      if (!a) return b; if (!b) return a;
+      const [na, ua] = splitNum(a), [nb, ub] = splitNum(b);
+      if (na != null && nb != null && norm(ua) === norm(ub)) return fmt(na + nb) + (ua ? " " + ua : "");
+      return a + " + " + b;
+    }
+    function splitNum(q) {
+      const m = String(q).trim().match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+      return m ? [parseFloat(m[1]), m[2]] : [null, q];
+    }
+    const fmt = (n) => String(Math.round(n * 100) / 100);
+
+    // +/- buttons: step the leading number. Going to 0 removes the item.
+    function bump(item, d) {
+      const [n, unit] = splitNum(item.qty);
+      const next = (n ?? 1) + d;
+      if (next <= 0) {
+        state.kitchen = state.kitchen.filter((k) => k !== item);
+        toast("Out of " + item.name + ". Removed from kitchen");
+      } else {
+        item.qty = fmt(next) + (unit ? " " + unit : "");
+      }
+      save();
+    }
+
+    $("add-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      // Let people type "2 lbs chicken" straight into the name box too.
+      const parsed = $("add-qty").value.trim() ? { name: $("add-name").value, qty: $("add-qty").value } : parseLine($("add-name").value);
+      addItem(parsed.name, parsed.qty, $("add-soon").checked);
+      $("add-name").value = $("add-qty").value = "";
+      $("add-soon").checked = false;
+      $("add-name").focus();
+    });
+    $("bulk-add").addEventListener("click", () => {
+      const lines = $("bulk").value.split("\n").filter((l) => l.trim());
+      lines.forEach((l) => { const p = parseLine(l.replace(/^[-•*]\s*/, "")); addItem(p.name, p.qty); });
+      $("bulk").value = "";
+      if (lines.length) toast("Added " + lines.length + " items 🎉");
+    });
+    $("clear-kitchen").addEventListener("click", () => {
+      if (state.kitchen.length && confirm("Remove everything from My Kitchen?")) { state.kitchen = []; save(); }
     });
 
-    // Split the ingredients into "have" (ticked) and "need" (not ticked).
-    $("compare").addEventListener("click", () => {
-      const ticked = new Set([...$("checklist").querySelectorAll("input:checked")].map((b) => Number(b.value)));
-      const have = ingredients.filter((_, n) => ticked.has(n));
-      const need = ingredients.filter((_, n) => !ticked.has(n));
-      fillList("have", have.length ? have : ["—"]);
-      fillList("need", need.length ? need : ["Nothing, you're ready to cook!"]);
-      $("comparison").classList.remove("hidden");
+    function renderKitchen() {
+      const box = $("kitchen-list");
+      box.innerHTML = "";
+      if (!state.kitchen.length) {
+        box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "👀" }), "Your fridge is a mystery! Add a few things above."));
+        return;
+      }
+      const groups = {};
+      for (const item of state.kitchen) (groups[item.cat] ||= []).push(item);
+      for (const [cat] of [...CATEGORIES, ["🛒 Other"]]) {
+        if (!groups[cat]) continue;
+        box.append(h("div", { class: "cat" },
+          h("div", { class: "cat-title", textContent: cat }),
+          groups[cat].map((item) => h("div", { class: "item" + (item.useSoon ? " soon" : "") },
+            h("button", { class: "clock" + (item.useSoon ? " on" : ""), title: "Use it up soon", textContent: "⏰", onclick: () => { item.useSoon = !item.useSoon; save(); } }),
+            h("span", { class: "name", textContent: item.name }),
+            h("button", { class: "step", textContent: "−", onclick: () => bump(item, -1) }),
+            h("input", { class: "qty", type: "text", value: item.qty, placeholder: "qty", onchange: (e) => { item.qty = e.target.value.trim(); save(); } }),
+            h("button", { class: "step", textContent: "+", onclick: () => bump(item, 1) })
+          ))
+        ));
+      }
+    }
+
+    // ---------- Pantry staples ----------
+    // Always-stocked items: no amounts, never used up by "I cooked this".
+    const STAPLE_IDEAS = {
+      "🧂 Basics & spices": ["salt", "black pepper", "olive oil", "vegetable oil", "butter", "garlic powder", "onion powder", "cumin", "paprika", "smoked paprika", "chili flakes", "oregano", "cinnamon", "Italian seasoning", "curry powder", "honey", "sugar", "brown sugar", "flour"],
+      "🥫 Sauces & condiments": ["soy sauce", "hot sauce", "sriracha", "ketchup", "mayo", "mustard", "Dijon mustard", "BBQ sauce", "ranch", "white vinegar", "apple cider vinegar", "rice vinegar", "balsamic vinegar", "sesame oil", "oyster sauce", "hoisin sauce", "fish sauce", "gochujang", "chili crisp", "teriyaki sauce", "Worcestershire sauce", "maple syrup", "peanut butter", "tahini", "salsa", "pesto"],
+      "🍛 Indian pantry": ["turmeric", "garam masala", "red chili powder", "Kashmiri chili powder", "coriander powder", "cumin seeds", "mustard seeds", "hing (asafoetida)", "kasuri methi", "fenugreek seeds", "cardamom", "cloves", "bay leaves", "curry leaves", "chaat masala", "amchur", "ghee", "ginger garlic paste", "tamarind paste", "besan", "basmati rice", "toor dal", "moong dal", "chana dal"],
+    };
+    const hasStaple = (name) => state.staples.some((s) => norm(s) === norm(name));
+
+    function addStaple(name) {
+      name = name.trim();
+      if (!name || hasStaple(name)) return;
+      state.staples.push(name);
+      save();
+    }
+    $("staple-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      $("staple-name").value.split(",").forEach(addStaple);
+      $("staple-name").value = "";
     });
+
+    function restock(name) {
+      state.grocery ||= { items: [], sig: signature() };
+      if (!state.grocery.items.some((i) => i.section === "Restock staples" && norm(i.item) === norm(name))) {
+        state.grocery.items.push({ id: newId(), item: name, quantity: "", for: [], section: "Restock staples", done: false });
+      }
+      save();
+      toast(name + " is on your grocery list 🛒");
+    }
+
+    function renderStaples() {
+      const mine = $("my-staples");
+      mine.innerHTML = "";
+      if (!state.staples.length) mine.append(h("p", { class: "hint", textContent: "No staples yet. Tap the ones you always have below." }));
+      state.staples.forEach((name) => mine.append(h("span", { class: "staple on" }, name,
+        h("button", { type: "button", title: "Running low: add to grocery list", textContent: "🛒", onclick: () => restock(name) }),
+        h("button", { type: "button", title: "Remove", textContent: "✕", onclick: () => { state.staples = state.staples.filter((s) => s !== name); save(); } })
+      )));
+      // Starter ideas, grouped; ones you already have are hidden.
+      const ideas = $("staple-ideas");
+      ideas.innerHTML = "";
+      for (const [group, names] of Object.entries(STAPLE_IDEAS)) {
+        const left = names.filter((n) => !hasStaple(n));
+        if (!left.length) continue;
+        ideas.append(h("h3", { textContent: group }), h("div", { class: "chips" },
+          left.map((name) => h("button", { type: "button", class: "staple", textContent: "+ " + name, onclick: () => addStaple(name) }))
+        ));
+      }
+    }
+
+    // ---------- Plan ----------
+    document.querySelectorAll("[data-goal]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const key = b.dataset.goal;
+        state[key] = Math.max(1, Math.min(21, state[key] + Number(b.dataset.d)));
+        save();
+      })
+    );
+    const portionsNeeded = () => state.meals * state.people;
+    const portionsPlanned = () => state.plan.reduce((sum, r) => sum + r.portions, 0);
+
+    $("suggest-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      busy($("suggest-btn"), "Cooking up ideas... 🧑‍🍳", $("plan-error"), async () => {
+        const kitchen = state.kitchen.map(({ name, qty, useSoon }) => ({ name, qty, useSoon }));
+        const data = await post("/api/suggest", { kitchen, staples: state.staples, craving: $("craving").value.trim() });
+        state.ideas = data.recipes.map((r) => ({ ...r, source: "idea" }));
+        save();
+        $("ideas").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    // Screenshot: shrink it in the browser first so the upload stays small.
+    let screenshot = null;
+    $("shot-file").addEventListener("change", async () => {
+      const file = $("shot-file").files[0];
+      if (!file) return;
+      const img = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = h("canvas", { width: Math.round(img.width * scale), height: Math.round(img.height * scale) });
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      screenshot = canvas.toDataURL("image/jpeg", 0.85);
+      $("shot-preview").src = screenshot;
+      $("shot-preview").classList.remove("hidden");
+      $("shot-clear").classList.remove("hidden");
+    });
+    function clearScreenshot() {
+      screenshot = null;
+      $("shot-file").value = "";
+      $("shot-preview").classList.add("hidden");
+      $("shot-clear").classList.add("hidden");
+    }
+    $("shot-clear").addEventListener("click", clearScreenshot);
+
+    // Add a recipe from a TikTok link, typed/pasted text, or a screenshot (same /api/extract as Build 1).
+    $("extract-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      busy($("extract-btn"), "Reading the recipe... 📖", $("plan-error"), async () => {
+        const url = $("url").value.trim();
+        const data = await post("/api/extract", { url, text: $("text").value.trim(), image: screenshot });
+        const r = data.recipe;
+        if (!r.ingredients?.length) throw new Error(r.notes || "No recipe found. Try pasting the recipe text or a clearer screenshot.");
+        const source = url ? "tiktok" : screenshot ? "screenshot" : "typed";
+        state.ideas = [{ ...r, source, author: data.author }];
+        $("url").value = $("text").value = "";
+        clearScreenshot();
+        save();
+        $("ideas").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    function addToPlan(recipe) {
+      const left = portionsNeeded() - portionsPlanned();
+      state.plan.push({ ...recipe, id: newId(), portions: Math.max(1, Math.min(left > 0 ? left : 4, recipe.servings || 4)) });
+      state.ideas = state.ideas.filter((r) => r !== recipe);
+      save();
+      toast("Added " + recipe.title + " to your prep 🗓️");
+    }
+
+    function recipeDetails(r) {
+      return h("details", {},
+        h("summary", { textContent: "Ingredients & steps" }),
+        h("ul", {}, r.ingredients.map((i) => h("li", { textContent: (i.quantity ? i.quantity + " " : "") + i.item }))),
+        h("ol", {}, (r.steps || []).map((s) => h("li", { textContent: s }))),
+        r.notes ? h("p", { class: "hint", textContent: r.notes }) : null
+      );
+    }
+
+    function renderIdeas() {
+      const box = $("ideas");
+      box.innerHTML = "";
+      if (!state.ideas.length) return;
+      box.append(h("div", { class: "card" },
+        h("div", { class: "row", style: "justify-content:space-between" },
+          h("h2", { textContent: "💡 Ideas for you" }),
+          h("button", { class: "ghost small", textContent: "Clear", onclick: () => { state.ideas = []; save(); } })
+        ),
+        state.ideas.map((r) => h("div", { class: "recipe" },
+          h("h3", { textContent: r.title || "Recipe" }),
+          h("div", { class: "tags" },
+            r.source === "tiktok" ? h("span", { class: "tag", textContent: "🎵 TikTok" + (r.author ? " @" + r.author : "") }) : null,
+            r.source === "screenshot" ? h("span", { class: "tag", textContent: "📸 from screenshot" }) : null,
+            r.source === "typed" ? h("span", { class: "tag", textContent: "✍️ your recipe" }) : null,
+            r.servings ? h("span", { class: "tag", textContent: "🍽️ serves " + r.servings }) : null,
+            (r.uses_up || []).map((u) => h("span", { class: "tag soon", textContent: "⏰ uses up " + u })),
+            r.to_buy ? (r.to_buy.length ? h("span", { class: "tag buy", textContent: "🛒 need " + r.to_buy.join(", ") }) : h("span", { class: "tag", textContent: "✅ nothing to buy" })) : null
+          ),
+          recipeDetails(r),
+          h("button", { class: "green small", textContent: "+ Add to my prep", onclick: () => addToPlan(r) })
+        ))
+      ));
+    }
+
+    // "I cooked this": pick which kitchen items got used up, then remove the recipe from the plan.
+    function cooked(recipe) {
+      const words = recipe.ingredients.map((i) => norm(i.item));
+      const matches = state.kitchen.filter((k) => words.some((w) => w.includes(norm(k.name)) || norm(k.name).includes(w)));
+      const box = $("cooked-items");
+      box.innerHTML = "";
+      if (!matches.length) box.append(h("p", { class: "hint", textContent: "None of this recipe's ingredients are on your kitchen list." }));
+      matches.forEach((k) => box.append(h("label", {}, h("input", { type: "checkbox", value: k.id }), (k.qty ? k.qty + " " : "") + k.name)));
+      const dlg = $("cooked-dialog");
+      dlg.onclose = () => {
+        if (dlg.returnValue !== "ok") return;
+        const used = new Set([...box.querySelectorAll("input:checked")].map((b) => b.value));
+        state.kitchen = state.kitchen.filter((k) => !used.has(k.id));
+        state.plan = state.plan.filter((r) => r !== recipe);
+        save();
+        confetti(["🍽️", "🎉", "⭐", "🥳"]);
+        toast("Meal prepped! " + recipe.title + " is done 🎉");
+      };
+      dlg.returnValue = "";
+      dlg.showModal();
+    }
+
+    function renderPlan() {
+      $("goal-meals").textContent = state.meals;
+      $("goal-people").textContent = state.people;
+      const need = portionsNeeded(), have = portionsPlanned();
+      $("goal-bar").style.width = Math.min(100, (have / need) * 100) + "%";
+      $("goal-text").textContent = have >= need
+        ? `🎉 ${have} portions planned. You're covered for ${state.meals} meals!`
+        : `${have} of ${need} portions planned (${state.meals} meals × ${state.people} ${state.people > 1 ? "people" : "person"}).`;
+
+      const box = $("plan-list");
+      box.innerHTML = "";
+      if (!state.plan.length) {
+        box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "🍱" }), "No recipes yet. Get ideas or add a recipe above."));
+        return;
+      }
+      state.plan.forEach((r) => box.append(h("div", { class: "recipe" },
+        h("h3", { textContent: r.title }),
+        h("div", { class: "stepper" }, "Portions",
+          h("button", { class: "step", textContent: "−", onclick: () => { r.portions = Math.max(1, r.portions - 1); save(); } }),
+          h("b", { textContent: r.portions }),
+          h("button", { class: "step", textContent: "+", onclick: () => { r.portions++; save(); } })
+        ),
+        recipeDetails(r),
+        h("div", { class: "row" },
+          h("button", { class: "green small", textContent: "🍽️ I cooked this", onclick: () => cooked(r) }),
+          h("button", { class: "ghost small", textContent: "Remove", onclick: () => { state.plan = state.plan.filter((x) => x !== r); save(); } })
+        )
+      )));
+    }
+
+    // ---------- Grocery list ----------
+    // A fingerprint of plan + kitchen, so we can tell when the list is out of date.
+    const signature = () => JSON.stringify([state.plan.map((r) => [r.id, r.portions]), state.kitchen.map((k) => [k.name, k.qty]), state.staples]);
+    // Sections people add to by hand; these survive a rebuild of the AI list.
+    const MANUAL_SECTIONS = ["Restock staples", "Extras"];
+
+    // The list rebuilds itself whenever the plan, kitchen or staples change.
+    // It waits a moment so several quick taps (like portions +/−) become one AI call.
+    let groceryTimer = null, groceryBusy = false, failedSig = null;
+
+    function scheduleGrocery() {
+      const sig = signature();
+      if (state.grocery?.sig === sig || sig === failedSig) return;
+      if (!state.plan.length) {
+        // No recipes: keep only the items added by hand, no AI call needed.
+        if (state.grocery) { state.grocery.items = state.grocery.items.filter((i) => MANUAL_SECTIONS.includes(i.section)); state.grocery.sig = sig; save(); }
+        return;
+      }
+      clearTimeout(groceryTimer);
+      groceryTimer = setTimeout(buildGrocery, 1500);
+    }
+
+    async function buildGrocery() {
+      if (groceryBusy) return; // the finished call checks again and catches up
+      groceryBusy = true;
+      const sig = signature();
+      $("grocery-error").classList.add("hidden");
+      render();
+      try {
+        const recipes = state.plan.map(({ title, servings, portions, ingredients }) => ({ title, servings, portions, ingredients }));
+        const kitchen = state.kitchen.map(({ name, qty }) => ({ name, qty }));
+        const data = await post("/api/grocery", { recipes, kitchen, staples: state.staples });
+        // Keep ticks on items that were already in the cart.
+        const ticked = new Set((state.grocery?.items || []).filter((i) => i.done).map((i) => norm(i.item)));
+        const items = data.sections.flatMap((s) => s.items.map((i) => ({ ...i, id: newId(), section: s.name, done: ticked.has(norm(i.item)) })));
+        const extras = state.grocery ? state.grocery.items.filter((i) => MANUAL_SECTIONS.includes(i.section)) : [];
+        state.grocery = { items: [...items, ...extras], sig };
+        failedSig = null;
+        if (!document.getElementById("page-grocery").classList.contains("active")) toast("🛒 Grocery list updated");
+      } catch (err) {
+        failedSig = sig; // don't retry the same thing in a loop; Refresh tries again
+        $("grocery-error").textContent = err.message;
+        $("grocery-error").classList.remove("hidden");
+      } finally {
+        groceryBusy = false;
+        save(); // also re-checks: if the plan changed mid-call, this schedules the next update
+      }
+    }
+
+    $("grocery-btn").addEventListener("click", () => { failedSig = null; buildGrocery(); });
+
+    $("extra-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const p = parseLine($("extra").value);
+      if (!p.name) return;
+      state.grocery ||= { items: [], sig: signature() };
+      state.grocery.items.push({ id: newId(), item: p.name, quantity: p.qty, for: [], section: "Extras", done: false });
+      $("extra").value = "";
+      save();
+    });
+
+    $("copy-btn").addEventListener("click", async () => {
+      const lines = ["🛒 Fridge to Feast grocery list"];
+      let section = "";
+      for (const i of state.grocery.items.filter((i) => !i.done)) {
+        if (i.section !== section) { section = i.section; lines.push("", section.toUpperCase()); }
+        lines.push("☐ " + groceryLabel(i));
+      }
+      try { await navigator.clipboard.writeText(lines.join("\n")); toast("Copied! Paste it in Notes or a text 📋"); }
+      catch { toast("Couldn't copy on this browser"); }
+    });
+
+    // "I bought these": move ticked items into the kitchen in one tap.
+    $("bought-btn").addEventListener("click", () => {
+      const bought = state.grocery.items.filter((i) => i.done);
+      if (!bought.length) return toast("Tick the things you bought first ☝️");
+      bought.forEach((i) => {
+        if (i.section === "Restock staples") return; // staples are always "on", nothing to add
+        const existing = state.kitchen.find((k) => norm(k.name) === norm(i.item));
+        if (existing) existing.qty = combineQty(existing.qty, i.quantity || "");
+        else state.kitchen.push({ id: newId(), name: i.item, qty: i.quantity || "", useSoon: false, cat: categoryOf(i.item) });
+      });
+      state.grocery.items = state.grocery.items.filter((i) => !i.done);
+      state.grocery.sig = signature(); // the list already reflects these purchases
+      save();
+      confetti();
+      toast(bought.length + " items stocked in your kitchen 🧊");
+    });
+
+    // "2 limes" + "limes" would read "2 limes limes", so drop the name if the amount already has it.
+    function groceryLabel(i) {
+      const q = i.quantity || "";
+      return norm(q).endsWith(norm(i.item)) ? q : (q ? q + " " : "") + i.item;
+    }
+
+    function renderGrocery() {
+      const box = $("grocery-list");
+      box.innerHTML = "";
+      const g = state.grocery;
+      const updating = groceryBusy || (state.plan.length && g?.sig !== signature() && signature() !== failedSig);
+      $("grocery-status").textContent = groceryBusy ? "✍️ Updating your list to match your plan... (the free AI can take a minute)" : "⏳ Your plan changed, updating in a moment...";
+      $("grocery-status").classList.toggle("hidden", !updating);
+      $("grocery-btn").classList.toggle("hidden", !state.plan.length || groceryBusy);
+      $("grocery-actions").classList.toggle("hidden", !g || !g.items.length);
+
+      if (!state.plan.length && !g?.items.length) {
+        box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "🛒" }), "Add recipes to your prep first, then your list appears here.",
+          h("br"), h("button", { class: "purple small", style: "margin-top:12px", textContent: "Go to Plan", onclick: () => showPage("plan") })));
+        return;
+      }
+      if (!g) return;
+      if (!g.items.length && !updating) { box.append(h("div", { class: "empty" }, h("span", { class: "big", textContent: "🎉" }), "Nothing to buy. Time to cook!")); return; }
+
+      const doneCount = g.items.filter((i) => i.done).length;
+      box.append(h("p", { class: "hint", style: "margin-top:12px", textContent: `${doneCount} of ${g.items.length} in your cart` }));
+      const sections = [...new Set(g.items.map((i) => i.section))];
+      for (const s of sections) {
+        box.append(h("h3", { textContent: s }));
+        g.items.filter((i) => i.section === s).forEach((i) => box.append(
+          h("label", { class: "g-item" + (i.done ? " done" : "") },
+            h("input", { type: "checkbox", checked: i.done, onchange: () => { i.done = !i.done; save(); } }),
+            h("div", {},
+              h("div", { class: "what", textContent: groceryLabel(i) }),
+              i.for?.length ? h("div", { class: "for", textContent: "for " + i.for.join(", ") }) : null
+            )
+          )
+        ));
+      }
+    }
+
+    // ---------- Render everything ----------
+    function render() {
+      renderKitchen();
+      renderStaples();
+      renderIdeas();
+      renderPlan();
+      renderGrocery();
+      $("badge-kitchen").textContent = state.kitchen.length || "";
+      $("badge-plan").textContent = state.plan.length || "";
+      const toBuy = state.grocery ? state.grocery.items.filter((i) => !i.done).length : 0;
+      $("badge-grocery").textContent = groceryBusy ? "⏳" : toBuy || "";
+      document.querySelectorAll(".badge").forEach((b) => b.classList.toggle("hidden", !b.textContent));
+    }
+    render();
+    scheduleGrocery(); // catch up if the plan changed since the list was last built
   </script>
 </body>
 </html>
