@@ -137,7 +137,7 @@
         <h2>What's in your kitchen?</h2>
         <p class="hint">Add what's in your fridge and pantry. It's saved, so next week you only update what changed.</p>
         <div class="row">
-          <input id="add-name" type="text" placeholder="e.g. chicken thighs" autocomplete="off" />
+          <input id="add-name" type="text" placeholder="e.g. firm tofu" autocomplete="off" />
           <input id="add-qty" type="text" placeholder="2 lbs" style="flex:0 1 110px" autocomplete="off" />
           <button type="submit">Add</button>
         </div>
@@ -148,8 +148,8 @@
 
         <details>
           <summary>📝 Paste a whole list</summary>
-          <p class="hint">One item per line, like "2 lbs chicken" or "spinach".</p>
-          <textarea id="bulk" placeholder="2 lbs chicken thighs&#10;1 bag spinach&#10;6 eggs&#10;rice"></textarea>
+          <p class="hint">One item per line, like "1 block tofu" or "spinach".</p>
+          <textarea id="bulk" placeholder="1 block firm tofu&#10;1 bag spinach&#10;6 eggs&#10;rice"></textarea>
           <button id="bulk-add" type="button" class="purple small" style="margin-top:8px">Add all</button>
         </details>
       </form>
@@ -347,7 +347,7 @@
       return hit ? hit[0] : "🛒 Other";
     }
 
-    const STAPLES = ["🥚 eggs", "🍚 rice", "🧅 onion", "🧄 garlic", "🍗 chicken breast", "🍝 pasta", "🥬 spinach", "🥛 milk", "🍅 tomatoes", "🥫 black beans", "🧀 cheddar", "🍠 sweet potato"];
+    const STAPLES = ["🥚 eggs", "🍚 rice", "🧅 onion", "🧄 garlic", "🥡 tofu", "🍝 pasta", "🥬 spinach", "🥛 milk", "🍅 tomatoes", "🥫 black beans", "🧀 cheddar", "🍠 sweet potato"];
     STAPLES.forEach((s) => {
       const name = s.slice(s.indexOf(" ") + 1);
       $("staples").append(h("button", { type: "button", class: "staple", textContent: "+ " + s, onclick: () => addItem(name, "") }));

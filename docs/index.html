@@ -201,8 +201,8 @@
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">$3.08</div>
-          <div class="meta">Rough allocation of my $200/yr Claude subscription (~40% of ≈ $3.85/week × 2 weeks; I also use Claude for personal things). Not measured token spend or an extra bill. $0 API.</div>
+          <div class="stat-value">$4.62</div>
+          <div class="meta">Rough allocation of my $200/yr Claude subscription (~40% of ≈ $3.85/week × 3 weeks since Oct 27; I also use Claude for personal things). Not measured token spend or an extra bill. $0 API.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
@@ -210,7 +210,8 @@
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">[Not yet measured]</div>
+          <div class="stat-value">PostHog live</div>
+          <div class="meta">Pageviews, clicks and session replay are being recorded on this page and the local app since Nov 15. Real user numbers come after pod testing.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -237,9 +238,10 @@
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped:</strong> Pivoted the app into <strong>Fridge to Feast</strong>, a meal prep planner (screenshots above): a saved kitchen inventory with "use it up soon" flags, quick-add buttons and paste-a-list; a pantry staples list (spices, oils, sauces) that recipes use and the grocery list skips, with a 🛒 button to restock when running low; recipe ideas from what's in the kitchen (with an optional craving); adding a recipe from a TikTok link (the Build 1 import), typed or pasted text, or a screenshot from any website; a weekly goal (meals × people) with portions per recipe; a grocery list with specific amounts grouped by store section that you can tick off, copy, and restock from with one tap ("I bought these"); and "I cooked this" to clear used-up items. [PostHog: not yet installed]</li>
+          <li><strong>What shipped:</strong> Pivoted the app into <strong>Fridge to Feast</strong>, a meal prep planner (screenshots above): a saved kitchen inventory with "use it up soon" flags, quick-add buttons and paste-a-list; a pantry staples list (spices, oils, sauces) that recipes use and the grocery list skips, with a 🛒 button to restock when running low; recipe ideas from what's in the kitchen (with an optional craving); adding a recipe from a TikTok link (the Build 1 import), typed or pasted text, or a screenshot from any website; a weekly goal (meals × people) with portions per recipe; a grocery list with specific amounts grouped by store section that you can tick off, copy, and restock from with one tap ("I bought these"); and "I cooked this" to clear used-up items. PostHog analytics (pageviews, clicks and session replay) now runs on this Product Page and in the local app, and events are showing up in PostHog. Kitchen quick-add examples are now vegetarian (tofu instead of chicken).</li>
+          <li><strong>Things learned with AI:</strong> The PostHog project token (phc_) is meant to be public: it can only send events, unlike my OpenRouter key, which stays secret in .env. Ad blockers can stop analytics from loading, so missing events don't always mean the code is broken.</li>
           <li><strong>What broke / changed in PRD:</strong> The target user is the same (busy people who meal prep), but the job changed from "get one TikTok recipe" to "plan the week's meal prep from what I already have". TikTok import is now one way to add a recipe instead of the whole product. Fridge photo scanning is pushed to a future build so the manual flow can be tested first. In testing, the free model sometimes returned empty answers (the server now retries once), took 1–2 minutes, gave unrealistic amounts ("0.125 tsp cumin") and doubled names ("1 lime lime"). I tightened the grocery prompt and added a page-side fix. The riskiest assumption is now the accuracy of the grocery amounts.</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>Cost & time this week:</strong> $1.54 rough allocation of my $200/yr Claude subscription (~40% project share; not measured token spend or an extra bill) + $0.00 API (free OpenRouter model) · 2–3 hours</li>
         </ul>
       </div>
 
