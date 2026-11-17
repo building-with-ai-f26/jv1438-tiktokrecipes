@@ -3,7 +3,7 @@
 > Give this file to your coding agent and check that it is using these instructions. Keep the stack, commands, and ground rules current.
 
 ## 1. Project Overview
-- **What this repo builds:** Fridge to Feast, a meal prep planner for busy people: a saved kitchen inventory, a weekly meal prep plan (recipe ideas from what you have, or a TikTok recipe import), a grocery list with specific amounts, and one-tap kitchen updates after shopping or cooking. Fridge photo scanning is planned for a later build.
+- **What this repo builds:** Fridge to Feast, a meal prep planner for working professionals who want to eat home-cooked food without planning every meal: a saved kitchen inventory, a weekly meal prep plan (recipe ideas from what you have, or a TikTok recipe import), a grocery list with specific amounts, and one-tap kitchen updates after shopping or cooking. Fridge photo scanning is planned for a later build.
 - **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
 - **Tech stack:** Node.js (no npm packages) / plain HTML+JS in `public/index.html` / OpenRouter API. `server.js` has three JSON endpoints (`/api/suggest`, `/api/extract` for TikTok captions, `/api/grocery`) that share one `askModel` helper. User data (kitchen, plan, grocery list) lives in the browser's localStorage; there is no database.
 
