@@ -151,7 +151,7 @@
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
       <h1>🥕 Fridge to Feast</h1>
-      <p class="tagline">Meal prep for busy people: tell it what's in your fridge, pick recipes (or bring one from TikTok), and get a grocery list with exact amounts. Then update your kitchen in one tap so it's ready for next week.</p>
+      <p class="tagline">Meal prep for working professionals who'd rather cook at home than order in, but don't have time to plan every meal: tell it what's in your fridge, pick recipes (or bring one from TikTok), and get a grocery list with exact amounts. Then update your kitchen in one tap so it's ready for next week.</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -179,7 +179,7 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> Busy people who want to meal prep for the week but don't have time to figure out what to cook, check what's already in the fridge, and work out exactly what to buy.</p>
+      <p><strong>Who is this for?</strong> Working professionals who want to eat well at home instead of defaulting to takeout, but don't have the time or headspace to decide every meal, check what's already in the fridge, and work out exactly what to buy.</p>
       <p><strong>The painful "Before" workflow:</strong> Today users dig through the fridge and pantry, scroll TikTok or Google for recipes, rewatch videos to write down ingredients, guess how much to buy for the whole week, and then do it all again next week from scratch. Food goes bad because nobody remembers what needed using up.</p>
       <p><strong>The "After" workflow with this product:</strong> (1) Keep a saved list of what's in your kitchen, with a flag on things to use up soon, plus pantry staples (spices, oils, sauces) you set once and never re-enter. (2) Build a meal prep plan by asking "what can I make with what I have?" or by bringing a recipe you want: a TikTok link, a recipe you type or paste, or a screenshot from any website. (3) Get a grocery list with specific amounts, scaled to how many meals and people you're prepping for, minus what you already have. (4) Tap "I bought these" or "I cooked this" to keep your kitchen up to date for next time.</p>
 
@@ -194,7 +194,7 @@
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> That a free AI model can turn a meal plan into a grocery list with correct, store-realistic amounts: scaling recipes to the right number of portions, combining the same ingredient across recipes, and subtracting what's already in the kitchen when units don't match ("1 bag spinach" vs "3 cups"). Early runs showed real problems ("0.125 tsp cumin" instead of "1 jar", "1 lime lime"), which the prompt and page now guard against. Second risk: busy people will only come back if keeping the kitchen list up to date is close to effortless. Third: free models are slow (often 1–2 minutes) and sometimes return an empty answer, so the server retries once. TikTok captions still often leave out steps, so pasted text remains a fallback.</p>
+      <p><strong>Riskiest Assumption:</strong> That a free AI model can turn a meal plan into a grocery list with correct, store-realistic amounts: scaling recipes to the right number of portions, combining the same ingredient across recipes, and subtracting what's already in the kitchen when units don't match ("1 bag spinach" vs "3 cups"). Early runs showed real problems ("0.125 tsp cumin" instead of "1 jar", "1 lime lime"), which the prompt and page now guard against. Second risk: working professionals will only come back if keeping the kitchen list up to date is close to effortless. Third: free models are slow (often 1–2 minutes) and sometimes return an empty answer, so the server retries once. TikTok captions still often leave out steps, so pasted text remains a fallback.</p>
       <p><strong>Simple Architecture:</strong> [Kitchen list, pantry staples, plan and grocery list saved in the browser (localStorage)] → [Local Node.js server, no packages] → [Free AI model via OpenRouter, three JSON jobs: <code>/api/suggest</code> recipe ideas from the kitchen, <code>/api/extract</code> recipe from a TikTok caption, typed/pasted text, or a screenshot (OpenRouter's free router picks an image-capable free model when a screenshot is attached), <code>/api/grocery</code> scaled grocery list minus the kitchen] → [Web page: Kitchen / Plan / Grocery List tabs; "I bought these" and "I cooked this" update the kitchen]</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
@@ -249,7 +249,7 @@
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
           <li><strong>What shipped:</strong> [End-to-end workflow working with real inputs + PostHog funnel events]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
+          <li><strong>What broke / changed in PRD:</strong> Narrowed the target user from "busy people" (Build 1 feedback: too broad) to working professionals who want to eat home-cooked food instead of eating out, but don't have time to plan every meal.</li>
           <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
         </ul>
       </div>

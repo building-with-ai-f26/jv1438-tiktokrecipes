@@ -1,6 +1,6 @@
 # 🥕 Fridge to Feast
 
-> **One-line pitch:** Meal prep for busy people: keep a list of what's in your kitchen, plan the week's recipes (ideas from what you have, or a TikTok recipe), get a grocery list with exact amounts, and update your kitchen in one tap.
+> **One-line pitch:** Meal prep for working professionals who want to eat home-cooked food without planning every meal: keep a list of what's in your kitchen, plan the week's recipes (ideas from what you have, or a TikTok recipe), get a grocery list with exact amounts, and update your kitchen in one tap.
 
 - **Builder:** Juhi Vyas (`@jv1438`)
 - **Pod:** Pod M5
