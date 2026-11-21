@@ -102,7 +102,7 @@ async function handleExtract(body) {
   return { caption, author, recipe, usage };
 }
 
-// Short text version of the kitchen for prompts, e.g. "- 2 lbs chicken thighs (use soon)".
+// Short text version of the kitchen for prompts, e.g. "- 1 block firm tofu (use soon)".
 function describeKitchen(kitchen) {
   if (!kitchen.length) return "(nothing listed)";
   return kitchen.map((k) => `- ${k.qty ? k.qty + " " : ""}${k.name}${k.useSoon ? " (use soon)" : ""}`).join("\n");
@@ -162,7 +162,7 @@ Rules:
   Never list less than one store unit: a recipe needing 1 tsp cumin means "1 jar" on the list.
 - "quantity" is only the amount, never the item name: {"item": "limes", "quantity": "2"}, not {"item": "limes", "quantity": "2 limes"}.
 - "for" lists the recipe titles that need the item.
-- Section names must be from: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry, Spices & Sauces, Frozen, Other. Leave out empty sections.
+- Section names must be from: Produce, Protein, Dairy & Eggs, Bakery, Pantry, Spices & Sauces, Frozen, Other. Leave out empty sections.
 
 Meal prep plan:
 ${planText}
