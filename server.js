@@ -110,13 +110,15 @@ function describeKitchen(kitchen) {
 
 // "What can I make?": recipe ideas built mostly from what the user already has.
 async function handleSuggest(body) {
-  const { kitchen = [], staples = [], craving = "", diet = "" } = JSON.parse(body || "{}");
+  const { kitchen = [], staples = [], craving = "", diet = "", glutenFree = false } = JSON.parse(body || "{}");
   // Only these exact values reach the prompt, so a visitor can't slip their own text in through "diet".
   const DIET_RULES = {
     vegetarian: "Every recipe must be vegetarian: no meat, poultry, fish or seafood, and no ingredients made from them (like chicken stock, fish sauce or gelatin). Eggs and dairy are fine.",
     vegan: "Every recipe must be vegan: no meat, poultry, fish, seafood, eggs, dairy, honey or anything made from them (like chicken stock, fish sauce, butter or gelatin).",
   };
-  const dietRule = DIET_RULES[diet];
+  const GLUTEN_FREE_RULE = "Every recipe must be gluten-free: no wheat, barley, rye or regular oats, and nothing made from them (like regular pasta, bread, flour tortillas, couscous, seitan, regular soy sauce or beer). Use gluten-free swaps such as rice, potatoes, corn tortillas, tamari or certified gluten-free oats or pasta.";
+  // Each rule is fixed text; only true/known values switch it on, so visitors can't add their own words.
+  const dietRule = [DIET_RULES[diet], glutenFree === true ? GLUTEN_FREE_RULE : ""].filter(Boolean).join(" ");
   if (!kitchen.length && !craving) throw new Error("Add a few things to My Kitchen first, or name a dish you're craving.");
 
   const prompt = `You are a meal prep coach who suggests genuinely delicious recipes. Suggest 3 recipes.
