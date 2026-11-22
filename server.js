@@ -110,7 +110,13 @@ function describeKitchen(kitchen) {
 
 // "What can I make?": recipe ideas built mostly from what the user already has.
 async function handleSuggest(body) {
-  const { kitchen = [], staples = [], craving = "" } = JSON.parse(body || "{}");
+  const { kitchen = [], staples = [], craving = "", diet = "" } = JSON.parse(body || "{}");
+  // Only these exact values reach the prompt, so a visitor can't slip their own text in through "diet".
+  const DIET_RULES = {
+    vegetarian: "Every recipe must be vegetarian: no meat, poultry, fish or seafood, and no ingredients made from them (like chicken stock, fish sauce or gelatin). Eggs and dairy are fine.",
+    vegan: "Every recipe must be vegan: no meat, poultry, fish, seafood, eggs, dairy, honey or anything made from them (like chicken stock, fish sauce, butter or gelatin).",
+  };
+  const dietRule = DIET_RULES[diet];
   if (!kitchen.length && !craving) throw new Error("Add a few things to My Kitchen first, or name a dish you're craving.");
 
   const prompt = `You are a meal prep coach who suggests genuinely delicious recipes. Suggest 3 recipes.
@@ -121,13 +127,13 @@ Rules:
 - Taste comes first. Pick well-loved, flavorful dishes people actually crave (good seasoning, aromatics, a sauce or acid, contrasting textures). Never force unrelated kitchen items together just to use them up.
 - Build each recipe around 1-3 kitchen items that fit it naturally, especially ones marked "(use soon)". Buying other ingredients is fine and expected (up to about 6) when it makes the dish better.
 - Pick dishes that are good for meal prep: they keep 3-4 days in the fridge and reheat well.
-- Make the 3 recipes different from each other (cuisine, protein or style).
+- Make the 3 recipes different from each other (cuisine, main ingredient or style).
 - Assume salt, pepper, cooking oil and water are available, plus the pantry staples listed below. Use them freely.
 - Give every ingredient a specific quantity.
 - "uses_up" lists kitchen items marked "(use soon)" that the recipe uses.
 - "to_buy" lists every ingredient the recipe needs that is NOT in the kitchen or pantry staples.
 - Steps are short and clear, 4-8 steps, with times and temperatures.
-${craving ? `- The user is craving: "${craving}". All 3 recipes should match that request.` : ""}
+${dietRule ? `- ${dietRule} This rule comes before everything else, including the kitchen and the craving. If the kitchen lists an item that breaks it, leave that item out.\n` : ""}${craving ? `- The user is craving: "${craving}". All 3 recipes should match that request.` : ""}
 
 Kitchen:
 ${describeKitchen(kitchen)}

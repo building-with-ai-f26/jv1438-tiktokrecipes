@@ -68,8 +68,8 @@
     .hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .row > input[type=text], .row > input[type=url] { flex: 1 1 160px; }
-    input[type=text], input[type=url], textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 15px; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
-    input:focus, textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-soft); }
+    input[type=text], input[type=url], textarea, select { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 15px; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-soft); }
     textarea { min-height: 80px; resize: vertical; }
     button { border: 0; border-radius: 10px; padding: 12px 20px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; background: var(--navy); color: #fff; transition: background .15s, transform .1s; }
     button:hover { background: var(--navy-hover); }
@@ -281,6 +281,12 @@
           <form id="suggest-form" class="card">
             <h2>What can I make?</h2>
             <p class="hint">Tasty recipes built around what you have. A few things to buy is fine.</p>
+            <label class="hint" for="diet">Diet</label>
+            <select id="diet" style="margin-bottom:10px">
+              <option value="">No preference</option>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="vegan">Vegan</option>
+            </select>
             <input id="craving" type="text" placeholder="Craving anything? (optional) e.g. spicy, tacos" />
             <button id="suggest-btn" type="submit" class="wide">Give me ideas</button>
           </form>
@@ -356,7 +362,7 @@
     // ---------- Saved state (lives in this browser's localStorage) ----------
     const STORE_KEY = "fridge-to-feast";
     const state = Object.assign(
-      { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [] },
+      { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [], diet: "" },
       load()
     );
     function load() {
@@ -619,11 +625,15 @@
     const portionsNeeded = () => state.meals * state.people;
     const portionsPlanned = () => state.plan.reduce((sum, r) => sum + r.portions, 0);
 
+    // Diet choice is remembered with the rest of the saved state.
+    $("diet").value = state.diet;
+    $("diet").addEventListener("change", () => { state.diet = $("diet").value; save(); });
+
     $("suggest-form").addEventListener("submit", (e) => {
       e.preventDefault();
       busy($("suggest-btn"), "Cooking up ideas...‍", $("plan-error"), async () => {
         const kitchen = state.kitchen.map(({ name, qty, useSoon }) => ({ name, qty, useSoon }));
-        const data = await post("/api/suggest", { kitchen, staples: state.staples, craving: $("craving").value.trim() });
+        const data = await post("/api/suggest", { kitchen, staples: state.staples, craving: $("craving").value.trim(), diet: state.diet });
         state.ideas = data.recipes.map((r) => ({ ...r, source: "idea" }));
         save();
         $("ideas").scrollIntoView({ behavior: "smooth" });
