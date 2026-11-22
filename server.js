@@ -184,9 +184,17 @@ const RATE_LIMIT = 20; // roomy enough for a pod testing on one shared classroom
 const WINDOW_MS = 60 * 1000;
 const visitors = new Map(); // ip -> { count, resetAt }
 
+// On Render, requests come through Cloudflare, which sets cf-connecting-ip to the real visitor's IP.
+// Don't trust x-forwarded-for: a visitor can put any IP in it and dodge the limit (found in the Build 3 audit).
+// Locally there's no proxy, so use the connection's own address.
+let loggedIpSource = false;
 function visitorIp(req) {
-  // On Render the app sits behind a proxy, which puts the real visitor's IP first in x-forwarded-for.
-  return (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress;
+  const ip = req.headers["cf-connecting-ip"];
+  if (!loggedIpSource) { // one log line so the live logs show which source is used (never the IP itself)
+    console.log("Rate limit counts visitors by: " + (ip ? "cf-connecting-ip" : "connection address"));
+    loggedIpSource = true;
+  }
+  return ip || req.socket.remoteAddress;
 }
 
 // Returns how many seconds the visitor must wait, or 0 if the request is allowed.
