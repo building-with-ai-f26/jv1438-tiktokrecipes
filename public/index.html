@@ -282,11 +282,12 @@
             <h2>What can I make?</h2>
             <p class="hint">Tasty recipes built around what you have. A few things to buy is fine.</p>
             <label class="hint" for="diet">Diet</label>
-            <select id="diet" style="margin-bottom:10px">
+            <select id="diet" style="margin-bottom:8px">
               <option value="">No preference</option>
               <option value="vegetarian">Vegetarian</option>
               <option value="vegan">Vegan</option>
             </select>
+            <label class="check" style="margin-bottom:10px"><input id="gluten-free" type="checkbox" /> Gluten-free</label>
             <input id="craving" type="text" placeholder="Craving anything? (optional) e.g. spicy, tacos" />
             <button id="suggest-btn" type="submit" class="wide">Give me ideas</button>
           </form>
@@ -362,7 +363,7 @@
     // ---------- Saved state (lives in this browser's localStorage) ----------
     const STORE_KEY = "fridge-to-feast";
     const state = Object.assign(
-      { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [], diet: "" },
+      { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [], diet: "", glutenFree: false },
       load()
     );
     function load() {
@@ -628,12 +629,14 @@
     // Diet choice is remembered with the rest of the saved state.
     $("diet").value = state.diet;
     $("diet").addEventListener("change", () => { state.diet = $("diet").value; save(); });
+    $("gluten-free").checked = state.glutenFree;
+    $("gluten-free").addEventListener("change", () => { state.glutenFree = $("gluten-free").checked; save(); });
 
     $("suggest-form").addEventListener("submit", (e) => {
       e.preventDefault();
       busy($("suggest-btn"), "Cooking up ideas...‍", $("plan-error"), async () => {
         const kitchen = state.kitchen.map(({ name, qty, useSoon }) => ({ name, qty, useSoon }));
-        const data = await post("/api/suggest", { kitchen, staples: state.staples, craving: $("craving").value.trim(), diet: state.diet });
+        const data = await post("/api/suggest", { kitchen, staples: state.staples, craving: $("craving").value.trim(), diet: state.diet, glutenFree: state.glutenFree });
         state.ideas = data.recipes.map((r) => ({ ...r, source: "idea" }));
         save();
         $("ideas").scrollIntoView({ behavior: "smooth" });
