@@ -245,6 +245,10 @@ const server = http.createServer((req, res) => {
       supabaseKey: process.env.SUPABASE_PUBLISHABLE_KEY || null,
     }));
   }
+  if (req.method === "GET" && req.url === "/privacy") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    return fs.createReadStream(path.join(__dirname, "public", "privacy.html")).pipe(res);
+  }
   if (req.method === "GET" && req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     return fs.createReadStream(path.join(__dirname, "public", "index.html")).pipe(res);

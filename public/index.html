@@ -225,7 +225,7 @@
     </aside>
 
     <main class="main"><div class="inner">
-      <div class="crumbs"><span>Fridge to Feast</span><span>/</span><span id="crumb">Kitchen</span><span id="account" class="account"></span></div>
+      <div class="crumbs"><span>Fridge to Feast</span><span>/</span><span id="crumb">Kitchen</span><span id="account" class="account ph-no-capture"></span></div>
 
       <!-- 1. MY KITCHEN: what you already have -->
       <section id="page-kitchen" class="page active">
@@ -1042,6 +1042,7 @@
     function renderAccount() {
       const box = $("account");
       box.innerHTML = "";
+      box.append(h("a", { href: "/privacy", class: "who", textContent: "Privacy" }));
       if (!sb) return; // sign-in isn't set up on this server
       if (user) box.append(
         h("span", { class: "who", textContent: user.email, title: user.email }),
