@@ -25,5 +25,10 @@ create policy "Add own data"    on public.user_data for insert to authenticated 
 create policy "Change own data" on public.user_data for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy "Delete own data" on public.user_data for delete to authenticated using ((select auth.uid()) = user_id);
 
+-- Signed-in users may use the table at all (newer Supabase projects don't grant this automatically;
+-- without it every save fails with "permission denied for table user_data"). The policies above
+-- still limit each person to their own row.
+grant select, insert, update, delete on public.user_data to authenticated;
+
 -- Visitors who aren't signed in get no access at all.
 revoke all on public.user_data from anon;
