@@ -236,6 +236,15 @@ function tooLarge(req, res) {
 const routes = { "/api/extract": handleExtract, "/api/suggest": handleSuggest, "/api/grocery": handleGrocery };
 
 const server = http.createServer((req, res) => {
+  // Sign-in settings for the page. Both values are public by design (the publishable key can only do
+  // what Row Level Security allows); they live in .env / Render so they aren't written into the code.
+  if (req.method === "GET" && req.url === "/api/config") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({
+      supabaseUrl: process.env.SUPABASE_URL || null,
+      supabaseKey: process.env.SUPABASE_PUBLISHABLE_KEY || null,
+    }));
+  }
   if (req.method === "GET" && req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     return fs.createReadStream(path.join(__dirname, "public", "index.html")).pipe(res);
