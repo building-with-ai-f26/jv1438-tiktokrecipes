@@ -221,6 +221,15 @@ setInterval(() => {
   for (const [ip, v] of visitors) if (now >= v.resetAt) visitors.delete(ip);
 }, WINDOW_MS).unref();
 
+const MAX_BODY_BYTES = 3 * 1024 * 1024; // 3 MB
+
+// Send 413 and close the connection so the rest of the oversized upload isn't read.
+function tooLarge(req, res) {
+  res.writeHead(413, { "Content-Type": "application/json", Connection: "close" });
+  res.end(JSON.stringify({ error: "That's too big to send. Try a smaller screenshot or less text." }));
+  req.resume(); // throw away anything still arriving instead of keeping it in memory
+}
+
 // POST routes: each takes the raw request body and returns an object to send back as JSON.
 const routes = { "/api/extract": handleExtract, "/api/suggest": handleSuggest, "/api/grocery": handleGrocery };
 
@@ -235,9 +244,18 @@ const server = http.createServer((req, res) => {
       res.writeHead(429, { "Content-Type": "application/json", "Retry-After": String(wait) });
       return res.end(JSON.stringify({ error: `Too many requests. Please wait ${wait} seconds and try again.` }));
     }
-    let body = "";
-    req.on("data", (chunk) => (body += chunk));
+    // Size cap: a huge request could use up the server's memory and crash it for everyone
+    // (Build 3 audit: one 191 MB request used about 1.2 GB). Screenshots are shrunk in the browser to about 1-2 MB.
+    if (Number(req.headers["content-length"]) > MAX_BODY_BYTES) return tooLarge(req, res);
+    let body = "", size = 0, stopped = false;
+    req.on("data", (chunk) => {
+      if (stopped) return;
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) { stopped = true; body = ""; return tooLarge(req, res); }
+      body += chunk;
+    });
     req.on("end", async () => {
+      if (stopped) return;
       try {
         const result = await routes[req.url](body);
         res.writeHead(200, { "Content-Type": "application/json" });
