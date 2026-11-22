@@ -148,6 +148,20 @@
     .error { color: var(--danger); font-weight: 500; }
     .hidden { display: none !important; }
 
+    /* Week calendar */
+    .week-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .week-nav h2 { margin: 0; }
+    .week-nav .hint { margin: 2px 0 0; text-align: center; font-weight: 600; color: var(--navy); }
+    .day { border-top: 1px solid var(--line); padding: 14px 0; }
+    .day:first-of-type { border-top: 0; }
+    .day-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .day-name { font-weight: 600; }
+    .day.today .day-name { color: var(--navy); }
+    .day .recipes { margin-top: 10px; }
+    .day-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin: 14px 0; }
+    .day-pick button { padding: 10px 6px; font-size: 14px; }
+    input[type=date] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 14px; background: #fff; color: var(--ink); }
+
     /* Toast, dialog, confetti */
     #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140px); background: var(--navy); color: #fff; padding: 12px 22px; border-radius: 10px; font-weight: 500; transition: transform .3s; z-index: 20; max-width: calc(100% - 32px); text-align: center; }
     #toast.show { transform: translate(-50%, 0); }
@@ -268,7 +282,7 @@
         </header>
 
         <div class="card soft">
-          <h2>This week's goal</h2>
+          <h2 id="goal-title">This week's goal</h2>
           <div class="goal" style="margin-top:12px">
             <div class="stepper">Meals <button class="step" data-goal="meals" data-d="-1">−</button><b id="goal-meals"></b><button class="step" data-goal="meals" data-d="1">+</button></div>
             <div class="stepper">People <button class="step" data-goal="people" data-d="-1">−</button><b id="goal-people"></b><button class="step" data-goal="people" data-d="1">+</button></div>
@@ -309,7 +323,12 @@
         <div id="ideas"></div>
 
         <div class="card">
-          <h2>My meal prep</h2>
+          <div class="week-nav">
+            <button type="button" class="step" id="week-prev" aria-label="Previous week">‹</button>
+            <div><h2>My meal prep</h2><p id="week-label" class="hint"></p></div>
+            <button type="button" class="step" id="week-next" aria-label="Next week">›</button>
+          </div>
+          <div class="row" style="justify-content:center;margin-top:8px"><button type="button" id="week-today" class="ghost small hidden">Back to this week</button></div>
           <div id="plan-list"></div>
         </div>
       </section>
@@ -318,7 +337,7 @@
       <section id="page-grocery" class="page">
         <header class="page-head">
           <p class="eyebrow">Less guesswork at the store</p>
-          <h1>This week's grocery list</h1>
+          <h1 id="grocery-title">This week's grocery list</h1>
           <p class="lede">Only what your plan needs that isn't already in your kitchen.</p>
         </header>
 
@@ -357,6 +376,18 @@
       </div>
     </form>
   </dialog>
+  <dialog id="day-dialog">
+    <form method="dialog">
+      <h2>When will you cook it?</h2>
+      <p id="day-recipe" class="hint"></p>
+      <div id="day-choices" class="day-pick"></div>
+      <label class="hint">Or another date <input type="date" id="day-other" /></label>
+      <div class="row" style="margin-top:18px;justify-content:flex-end">
+        <button value="cancel" class="ghost small">Cancel</button>
+        <button value="ok" class="small">Add to my prep</button>
+      </div>
+    </form>
+  </dialog>
   <div id="toast"></div>
 
   <script>
@@ -379,6 +410,24 @@
     const $ = (id) => document.getElementById(id);
     const newId = () => Math.random().toString(36).slice(2, 9);
     const norm = (s) => s.toLowerCase().trim();
+
+    // ---------- Dates (kept as "YYYY-MM-DD" in local time, so time zones can't shift a day) ----------
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const parseDay = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+    const addDays = (s, n) => { const d = parseDay(s); d.setDate(d.getDate() + n); return iso(d); };
+    const mondayOf = (s) => addDays(s, -((parseDay(s).getDay() + 6) % 7));
+    const todayIso = () => iso(new Date());
+    const fmtDay = (s, opts) => parseDay(s).toLocaleDateString(undefined, opts);
+    const weekDays = () => [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(state.weekStart, i));
+    const weekPlan = () => state.plan.filter((r) => r.date >= state.weekStart && r.date < addDays(state.weekStart, 7));
+    function weekLabel() {
+      const end = addDays(state.weekStart, 6), sameMonth = state.weekStart.slice(0, 7) === end.slice(0, 7);
+      return fmtDay(state.weekStart, { month: "short", day: "numeric" }) + " – " + fmtDay(end, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" });
+    }
+
+    // Always open on the current week. Recipes planned before the calendar existed get today's date.
+    state.weekStart = mondayOf(todayIso());
+    state.plan.forEach((r) => { r.date ||= todayIso(); });
 
     // Build a DOM element: h("button", { class: "x", onclick: fn }, "text", childEl)
     function h(tag, props = {}, ...children) {
@@ -624,7 +673,7 @@
       })
     );
     const portionsNeeded = () => state.meals * state.people;
-    const portionsPlanned = () => state.plan.reduce((sum, r) => sum + r.portions, 0);
+    const portionsPlanned = () => weekPlan().reduce((sum, r) => sum + r.portions, 0);
 
     // Diet choice is remembered with the rest of the saved state.
     $("diet").value = state.diet;
@@ -682,12 +731,45 @@
       });
     });
 
+    // "+ Plan something good" on a day remembers it, so the next recipe added defaults to that day.
+    let pendingDate = null;
+    function planSomethingFor(date) {
+      pendingDate = date;
+      $("suggest-form").scrollIntoView({ behavior: "smooth", block: "center" });
+      toast("Pick an idea or add a recipe for " + fmtDay(date, { weekday: "short", day: "numeric" }));
+    }
+
+    // Ask which day to cook it, then add it to that day.
     function addToPlan(recipe) {
-      const left = portionsNeeded() - portionsPlanned();
-      state.plan.push({ ...recipe, id: newId(), portions: Math.max(1, Math.min(left > 0 ? left : 4, recipe.servings || 4)) });
-      state.ideas = state.ideas.filter((r) => r !== recipe);
-      save();
-      toast("Added " + recipe.title + " to your prep");
+      const today = todayIso();
+      let chosen = pendingDate || (today >= state.weekStart && today < addDays(state.weekStart, 7) ? today : state.weekStart);
+      const box = $("day-choices"), other = $("day-other");
+      const drawChoices = () => {
+        box.innerHTML = "";
+        weekDays().forEach((d) => box.append(h("button", {
+          type: "button", class: d === chosen && !other.value ? "" : "purple",
+          textContent: fmtDay(d, { weekday: "short", day: "numeric" }),
+          onclick: () => { chosen = d; other.value = ""; drawChoices(); },
+        })));
+      };
+      other.value = "";
+      other.oninput = drawChoices;
+      $("day-recipe").textContent = recipe.title;
+      drawChoices();
+      const dlg = $("day-dialog");
+      dlg.onclose = () => {
+        if (dlg.returnValue !== "ok") return;
+        const date = other.value || chosen;
+        state.weekStart = mondayOf(date); // show the week it landed in
+        const left = portionsNeeded() - portionsPlanned();
+        state.plan.push({ ...recipe, id: newId(), date, portions: Math.max(1, Math.min(left > 0 ? left : 4, recipe.servings || 4)) });
+        state.ideas = state.ideas.filter((r) => r !== recipe);
+        pendingDate = null;
+        save();
+        toast("Added " + recipe.title + " to " + fmtDay(date, { weekday: "long" }));
+      };
+      dlg.returnValue = "";
+      dlg.showModal();
     }
 
     function recipeDetails(r) {
@@ -746,7 +828,15 @@
       dlg.showModal();
     }
 
+    $("week-prev").addEventListener("click", () => { state.weekStart = addDays(state.weekStart, -7); save(); });
+    $("week-next").addEventListener("click", () => { state.weekStart = addDays(state.weekStart, 7); save(); });
+    $("week-today").addEventListener("click", () => { state.weekStart = mondayOf(todayIso()); save(); });
+
     function renderPlan() {
+      const label = weekLabel();
+      $("week-label").textContent = label;
+      $("goal-title").textContent = "Goal for " + label;
+      $("week-today").classList.toggle("hidden", state.weekStart === mondayOf(todayIso()));
       $("goal-meals").textContent = state.meals;
       $("goal-people").textContent = state.people;
       const need = portionsNeeded(), have = portionsPlanned();
@@ -757,28 +847,41 @@
 
       const box = $("plan-list");
       box.innerHTML = "";
-      if (!state.plan.length) {
-        box.append(emptyState("calendar", "Your week starts here", "Get ideas or add a recipe above."));
-        return;
-      }
-      box.append(h("div", { class: "recipes" }, state.plan.map((r) => h("div", { class: "recipe" },
+      const today = todayIso();
+      weekDays().forEach((d) => {
+        const recipes = state.plan.filter((r) => r.date === d);
+        box.append(h("div", { class: "day" + (d === today ? " today" : "") },
+          h("div", { class: "day-head" },
+            h("span", { class: "day-name", textContent: fmtDay(d, { weekday: "short", day: "numeric" }) + (d === today ? " · Today" : "") }),
+            h("button", { type: "button", class: "ghost small", textContent: "+ Plan something good", onclick: () => planSomethingFor(d) })
+          ),
+          recipes.length ? planCards(recipes) : null
+        ));
+      });
+    }
+
+    function planCards(list) {
+      return h("div", { class: "recipes" }, list.map((r) => h("div", { class: "recipe" },
         h("h3", { textContent: r.title }),
         h("div", { class: "stepper" }, "Portions",
           h("button", { class: "step", textContent: "−", onclick: () => { r.portions = Math.max(1, r.portions - 1); save(); } }),
           h("b", { textContent: r.portions }),
           h("button", { class: "step", textContent: "+", onclick: () => { r.portions++; save(); } })
         ),
+        h("label", { class: "hint" }, "Prep day ",
+          h("input", { type: "date", value: r.date, onchange: (e) => { if (e.target.value) { r.date = e.target.value; save(); } } })
+        ),
         recipeDetails(r),
         h("div", { class: "row" },
           h("button", { class: "green small", textContent: "I cooked this", onclick: () => cooked(r) }),
           h("button", { class: "ghost small", textContent: "Remove", onclick: () => { state.plan = state.plan.filter((x) => x !== r); save(); } })
         )
-      ))));
+      )));
     }
 
     // ---------- Grocery list ----------
     // A fingerprint of plan + kitchen, so we can tell when the list is out of date.
-    const signature = () => JSON.stringify([state.plan.map((r) => [r.id, r.portions]), state.kitchen.map((k) => [k.name, k.qty]), state.staples]);
+    const signature = () => JSON.stringify([state.weekStart, weekPlan().map((r) => [r.id, r.portions]), state.kitchen.map((k) => [k.name, k.qty]), state.staples]);
     // Sections people add to by hand; these survive a rebuild of the AI list.
     const MANUAL_SECTIONS = ["Restock staples", "Extras"];
 
@@ -789,8 +892,8 @@
     function scheduleGrocery() {
       const sig = signature();
       if (state.grocery?.sig === sig || sig === failedSig) return;
-      if (!state.plan.length) {
-        // No recipes: keep only the items added by hand, no AI call needed.
+      if (!weekPlan().length) {
+        // No recipes this week: keep only the items added by hand, no AI call needed.
         if (state.grocery) { state.grocery.items = state.grocery.items.filter((i) => MANUAL_SECTIONS.includes(i.section)); state.grocery.sig = sig; save(); }
         return;
       }
@@ -805,7 +908,7 @@
       $("grocery-error").classList.add("hidden");
       render();
       try {
-        const recipes = state.plan.map(({ title, servings, portions, ingredients }) => ({ title, servings, portions, ingredients }));
+        const recipes = weekPlan().map(({ title, servings, portions, ingredients }) => ({ title, servings, portions, ingredients }));
         const kitchen = state.kitchen.map(({ name, qty }) => ({ name, qty }));
         const data = await post("/api/grocery", { recipes, kitchen, staples: state.staples });
         // Keep ticks on items that were already in the cart.
@@ -875,16 +978,17 @@
       const box = $("grocery-list");
       box.innerHTML = "";
       const g = state.grocery;
-      const updating = groceryBusy || (state.plan.length && g?.sig !== signature() && signature() !== failedSig);
+      $("grocery-title").textContent = "Groceries for " + weekLabel();
+      const updating = groceryBusy || (weekPlan().length && g?.sig !== signature() && signature() !== failedSig);
       $("grocery-status").textContent = groceryBusy ? "Updating your list to match your plan... (the free AI can take a minute)" : "Your plan changed, updating in a moment...";
       $("grocery-status").classList.toggle("hidden", !updating);
-      $("grocery-btn").classList.toggle("hidden", !state.plan.length || groceryBusy);
+      $("grocery-btn").classList.toggle("hidden", !weekPlan().length || groceryBusy);
       $("grocery-actions").classList.toggle("hidden", !g || !g.items.length);
       const doneCount = g ? g.items.filter((i) => i.done).length : 0;
       $("stat-left").textContent = g ? g.items.length - doneCount : 0;
       $("stat-done").textContent = doneCount;
 
-      if (!state.plan.length && !g?.items.length) {
+      if (!weekPlan().length && !g?.items.length) {
         box.append(emptyState("basket", "Your list starts with your meals", "Add recipes to your meal plan to see the ingredients here.",
           h("button", { class: "small", style: "margin-top:16px", textContent: "Plan this week", onclick: () => showPage("plan") })));
         return;
@@ -915,7 +1019,7 @@
       renderPlan();
       renderGrocery();
       $("badge-kitchen").textContent = state.kitchen.length || "";
-      $("badge-plan").textContent = state.plan.length || "";
+      $("badge-plan").textContent = weekPlan().length || "";
       const toBuy = state.grocery ? state.grocery.items.filter((i) => !i.done).length : 0;
       $("badge-grocery").textContent = groceryBusy ? "…" : toBuy || "";
       document.querySelectorAll(".badge").forEach((b) => b.classList.toggle("hidden", !b.textContent));
