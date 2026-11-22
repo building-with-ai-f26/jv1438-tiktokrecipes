@@ -5,7 +5,7 @@
 ## 1. Project Overview
 - **What this repo builds:** Fridge to Feast, a meal prep planner for working professionals who want to eat home-cooked food without planning every meal: a saved kitchen inventory, a weekly meal prep plan (recipe ideas from what you have, or a TikTok recipe import), a grocery list with specific amounts, and one-tap kitchen updates after shopping or cooking. Fridge photo scanning is planned for a later build.
 - **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
-- **Tech stack:** Node.js (no npm packages) / plain HTML+JS in `public/index.html` / OpenRouter API. `server.js` has three JSON endpoints (`/api/suggest`, `/api/extract` for TikTok captions, `/api/grocery`) that share one `askModel` helper. User data (kitchen, plan, grocery list) lives in the browser's localStorage; there is no database. Each visitor gets 20 AI requests per minute (rate limit in `server.js`).
+- **Tech stack:** Node.js (no npm packages) / plain HTML+JS in `public/index.html` / OpenRouter API. `server.js` has three JSON endpoints (`/api/suggest`, `/api/extract` for TikTok captions, `/api/grocery`) that share one `askModel` helper. User data (kitchen, plan, grocery list, diet settings) lives in the browser's localStorage; signed-in users (Google via Supabase Auth) also get it saved to their own row in the Supabase table `user_data`, protected by Row Level Security (`supabase/schema.sql`). `GET /api/config` gives the page the Supabase URL and publishable key from the environment; `/privacy` is the privacy page. Each visitor gets 20 AI requests per minute (rate limit in `server.js`).
 
 ## 2. Commands
 - **Install dependencies:** none (needs Node 20.6+ for `--env-file`). Copy `.env.example` to `.env` and add your OpenRouter key.
@@ -22,6 +22,7 @@
 5. **Zero secrets in code:** Never hardcode API keys, tokens, or credentials. Always read from environment variables (`.env`) and update `.env.example` when new variables are needed.
 6. **Stop when looping:** If a fix fails twice in a row, stop, summarize what failed, and ask the human before trying a third approach.
 7. **Think about real use before picking limits:** Before choosing a number like a rate limit, timeout or size cap, think through how people will actually use the app (for example, a whole class on one shared Wi-Fi IP address). *Added after a real mistake:* the agent first set the rate limit to 10 requests per minute per IP, which could have blocked a pod testing together in class. It was raised to 20 before committing.
+8. **Supabase tables need grants and a real signed-in test:** When creating a Supabase table, put `grant ... to authenticated` (and `revoke all ... from anon` when visitors shouldn't use it) next to the RLS policies, and test a real signed-in save before calling it done. *Added after a real mistake:* the first `schema.sql` had RLS policies but no grant, so every save failed with "permission denied for table user_data". Newer Supabase projects don't grant table access automatically.
 
 ## 4. Shipping
 The app runs on **Render** (free Web Service) from the `main` branch. Every push to `main` redeploys it automatically.
@@ -30,7 +31,7 @@ The app runs on **Render** (free Web Service) from the `main` branch. Every push
 1. render.com → **New → Web Service** → connect the GitHub repo `building-with-ai-f26/jv1438-tiktokrecipes`, branch `main`.
 2. Settings: **Runtime** Node · **Build command** `node --version` (there is nothing to install) · **Start command** `node server.js` · **Instance type** Free.
    Do *not* use `--env-file=.env` on Render: there is no `.env` file there, and Node stops if the file is missing.
-3. **Environment** tab: add `OPENROUTER_API_KEY` (the real key), `OPENROUTER_MODEL`, `OPENROUTER_VISION_MODEL`, and `NODE_VERSION` = `24`. Render sets `PORT` itself.
+3. **Environment** tab: add `OPENROUTER_API_KEY` (the real key), `OPENROUTER_MODEL`, `OPENROUTER_VISION_MODEL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (the publishable key, never the secret one), and `NODE_VERSION` = `24`. Render sets `PORT` itself.
 4. Deploy, then copy the `https://….onrender.com` URL into the PRD and README.
 
 **Every change after that (the agent follows these steps):**

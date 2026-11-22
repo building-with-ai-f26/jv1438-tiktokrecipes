@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy · Fridge to Feast</title>
+  <style>
+    :root { --ink: #18202e; --muted: #5f6878; --navy: #1f3354; --line: #e3e7ee; --bg: #f8f9fb; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 32px; letter-spacing: -0.03em; margin: 0 0 4px; }
+    h2 { font-size: 19px; margin: 32px 0 8px; color: var(--navy); }
+    p, li { color: var(--ink); }
+    .meta { color: var(--muted); margin: 0 0 24px; }
+    a { color: var(--navy); }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+<main>
+  <p><a href="/">← Back to Fridge to Feast</a></p>
+  <h1>Privacy</h1>
+  <p class="meta">Fridge to Feast is a student project. Last updated November 22, 2026.</p>
+
+  <h2>What the app saves</h2>
+  <ul>
+    <li>Your kitchen items, pantry staples, meal plan, grocery list, recipe ideas and diet settings.</li>
+    <li>If you sign in with Google: your email address and name from Google, used only to know which saved data is yours.</li>
+  </ul>
+
+  <h2>Where it's saved</h2>
+  <ul>
+    <li><b>Not signed in:</b> only in your own browser. Nothing is kept on our server.</li>
+    <li><b>Signed in:</b> also in a database at Supabase (US East). Database rules let each account read and change only its own data. Nobody else using the app can see it.</li>
+  </ul>
+
+  <h2>Who else receives some of it</h2>
+  <ul>
+    <li><b>OpenRouter (AI):</b> when you ask for recipe ideas, import a recipe or build a grocery list, the kitchen items, recipe text or screenshot needed for that request are sent to an AI model through OpenRouter. Your email is not sent.</li>
+    <li><b>PostHog (analytics):</b> records page views, clicks and session replays to help improve the app.</li>
+    <li><b>Google:</b> handles sign-in. We only receive your email and name.</li>
+  </ul>
+  <p>We don't sell your data or use it for ads.</p>
+
+  <h2>Deleting your data</h2>
+  <ul>
+    <li><b>From this browser:</b> sign out, or clear this site's data in your browser settings.</li>
+    <li><b>From your account:</b> open an issue on the project's <a href="https://github.com/building-with-ai-f26/jv1438-tiktokrecipes/issues">GitHub page</a> asking for your account to be deleted. Don't include personal details in the issue; we'll reply there to confirm.</li>
+  </ul>
+</main>
+</body>
+</html>

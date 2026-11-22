@@ -2,10 +2,12 @@
 
 **Live site:** https://fridge-to-feast-oguz.onrender.com
 **Lane:** Beginner
-**Audit date:** November 21, 2026
+**Audit date:** November 21, 2026 (Build 3, AI app with no database) · **Updated November 22, 2026** for Google sign-in (section 8)
 
 ## What kind of app this is
-**AI app, no database.** The server (`server.js`, plain Node with no npm packages) has three AI routes: `/api/suggest`, `/api/extract` and `/api/grocery`. They call OpenRouter with a key that lives only on the server. Each visitor's kitchen, plan and grocery list are saved in **their own browser's localStorage**. The server stores nothing, so there is no database, no sign-in and no file storage.
+**Now: an app with sign-in** (Google, via Supabase Auth) **plus AI routes.** Signing in is optional. Signed-out visitors keep everything in their browser, as before. Signed-in users also get their data saved to their own row in Supabase; see section 8.
+
+**At the Build 3 audit (Nov 21): AI app, no database.** The server (`server.js`, plain Node with no npm packages) has three AI routes: `/api/suggest`, `/api/extract` and `/api/grocery`. They call OpenRouter with a key that lives only on the server. Each visitor's kitchen, plan and grocery list are saved in **their own browser's localStorage**. The server stores nothing, so there is no database, no sign-in and no file storage.
 
 Hosting is a Render free Web Service in Virginia (US East), connected as a public Git repository. Deploys are manual (**Manual Deploy → Deploy latest commit**). Requests reach the app through Cloudflare.
 
@@ -31,7 +33,7 @@ Not applicable. Screenshots for recipe import are shrunk in the browser (max 160
 ### 4. Protecting production from the coding agent
 - `AGENTS.md` has an **Ask me first** list: deleting data, `git reset --hard` / force-push, keys and `.env`, Render/GitHub/OpenRouter/PostHog settings, anything that costs money, and merging to `main` (which deploys).
 - The agent works on branches and opens pull requests. A human merges them and clicks deploy on Render.
-- **Database backup:** not applicable, since there is no database. User data lives in each visitor's browser.
+- **Database backup:** not applicable at the Build 3 audit. Since sign-in, the `user_data` table is backed up by hand; see section 8.
 
 ### 5. Spending caps and rate limits
 - **OpenRouter key "Tiktok Recipes": hard credit limit of $1, resetting monthly.** Auto top-up is off and no payment method is saved. The app currently uses `openrouter/free` ($0 per request).
@@ -56,10 +58,39 @@ Other things reviewed:
 - **TikTok link:** must match `https://(www.|vm.|m.)tiktok.com/`, so the server can't be pointed at other sites.
 - **Screenshot upload:** must be a `data:image/(png|jpeg|webp|gif);base64,` value.
 
+### 8. Sign-in update (November 22): Google sign-in with Supabase
+**Setup:**
+- One table, `user_data`, with one row per signed-in user holding their app data as JSON.
+- Everything is in `supabase/schema.sql`, tracked in git.
+- **Row Level Security is on**, with policies that let a user read, add, change and delete only the row where `user_id = auth.uid()`.
+- Signed-in users get table access (`grant … to authenticated`). Anonymous visitors have all access revoked.
+- Rows are capped at about 1 MB (`pg_column_size(data) < 1000000`).
+- The browser uses Supabase's **publishable** key, which can only do what RLS allows. The server hands it to the page from environment variables (`/api/config`). The **secret key is not used anywhere** in the app.
+
+| Test | Result |
+|---|---|
+| **Account B tries to read Account A's data** (signed in as a second Google account, in the browser console) | ✅ Account B sees **1 row (its own)**. Reading A's row → **0 rows**. Changing A's row → **0 rows**. Deleting A's row → **0 rows**. Creating a row as A → **blocked: "new row violates row-level security policy"** (`403`). A's row was unchanged afterwards. |
+| Visitor who isn't signed in reads `user_data` with the publishable key | ✅ **Blocked**: "permission denied for table user_data" (`401`) |
+| Visitor who isn't signed in inserts a fake row | ✅ **Blocked** (`401`) |
+| Search the repo and full git history for `sb_secret_` / `service_role` keys | ✅ None |
+| **Manual backup** of `user_data` | ✅ Exported as CSV from Supabase's Table Editor and kept outside the repo, because it holds personal data. Supabase's free plan has no automatic backups. |
+| Google sign-in, save, sign out, sign back in (localhost) | ✅ The row is created on first sign-in and updated on each change. Sign-out clears the browser, and signing back in restores the data. |
+
+**Found and fixed while building it:**
+- **Saves were refused.** The first `schema.sql` had RLS policies but no grant, so every signed-in save failed with "permission denied for table user_data". Fixed by adding the grant. It's also now `AGENTS.md` rule 8.
+- **Session replay would have recorded users' emails.** PostHog replays record page text, and sign-in shows the email at the top. The account area now has PostHog's `ph-no-capture` class, so replays skip it.
+
+**Google sign-in settings:**
+- The Google app is in **Testing** mode, so only listed test users can sign in.
+- Supabase only redirects back to the live site and `localhost:3000`.
+- A privacy page is at `/privacy`.
+
 ## What we fixed
 1. Added a per-visitor rate limit (20/min) with `429` responses.
 2. Fixed the rate-limit bypass via fake `X-Forwarded-For` (attack #2).
 3. Request size cap of 3 MB, so oversized requests get `413` (attack #4).
+4. Signed-in saves failing with "permission denied" (missing table grant).
+5. Session replay no longer records the signed-in email.
 
 ## Remaining issues and known limits
 - **Rate-limit counts are in memory.** They reset when Render restarts the server, and they wouldn't be shared if the app ever ran on more than one server.
@@ -67,5 +98,9 @@ Other things reviewed:
 - **Typing a recipe or craving in the box is still free text sent to the AI.** Someone could try to make the AI say odd things, but it can only answer that one visitor, has no tools, and can't reach other users' data. Worst case is a strange recipe card for the person who typed it.
 - **The OpenRouter key expires Feb 7, 2027.** After that, AI features stop until a new key is created and pasted into Render's Environment tab.
 - **No automatic deploys.** Render isn't connected to the class GitHub organization (that needs owner approval), so deploys are manual.
-- **PostHog session replay** records page use on the live site. Visitors can type their kitchen items, which are not sensitive, but there's no sign-in, so there's no personal account data to leak.
+- **PostHog session replay** records page use on the live site, including kitchen items people type (not sensitive). The signed-in email is excluded with `ph-no-capture`.
+- **Database writes aren't rate-limited by our server.** Signed-in browsers write straight to Supabase, which our rate limit doesn't see. Limits on the damage: each user has exactly one row, it's capped at about 1 MB, writes are batched to at most one a second by the page, only Google test users can sign in, and RLS keeps each user to their own row.
+- **Two devices at once:** if one account is open on two devices, the last save wins.
+- **Backups are manual.** Export `user_data` again before any database change (it's on the Ask me first list).
+- **Account deletion is by request** (see `/privacy`). There's no delete-my-account button yet.
 - **Free model.** `openrouter/free` is slow (about 110–130 s per suggestion on the live site) and its quality varies.
