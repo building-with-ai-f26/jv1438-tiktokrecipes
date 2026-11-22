@@ -177,6 +177,44 @@ ${staples.join(", ") || "(none listed)"}`;
   return { sections: json.sections || [], usage };
 }
 
+// Rate limit: each visitor (by IP address) gets RATE_LIMIT AI requests per minute, so nobody can run up
+// the OpenRouter bill. It's counted before any work happens, so blocked requests cost nothing.
+// Counts live in memory and reset when the server restarts, which is fine for one small server.
+const RATE_LIMIT = 20; // roomy enough for a pod testing on one shared classroom Wi-Fi
+const WINDOW_MS = 60 * 1000;
+const visitors = new Map(); // ip -> { count, resetAt }
+
+// On Render, requests come through Cloudflare, which sets cf-connecting-ip to the real visitor's IP.
+// Don't trust x-forwarded-for: a visitor can put any IP in it and dodge the limit (found in the Build 3 audit).
+// Locally there's no proxy, so use the connection's own address.
+let loggedIpSource = false;
+function visitorIp(req) {
+  const ip = req.headers["cf-connecting-ip"];
+  if (!loggedIpSource) { // one log line so the live logs show which source is used (never the IP itself)
+    console.log("Rate limit counts visitors by: " + (ip ? "cf-connecting-ip" : "connection address"));
+    loggedIpSource = true;
+  }
+  return ip || req.socket.remoteAddress;
+}
+
+// Returns how many seconds the visitor must wait, or 0 if the request is allowed.
+function rateLimited(ip) {
+  const now = Date.now();
+  let v = visitors.get(ip);
+  if (!v || now >= v.resetAt) {
+    v = { count: 0, resetAt: now + WINDOW_MS };
+    visitors.set(ip, v);
+  }
+  v.count++;
+  return v.count > RATE_LIMIT ? Math.ceil((v.resetAt - now) / 1000) : 0;
+}
+
+// Forget visitors whose minute is over, so the map doesn't grow forever.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, v] of visitors) if (now >= v.resetAt) visitors.delete(ip);
+}, WINDOW_MS).unref();
+
 // POST routes: each takes the raw request body and returns an object to send back as JSON.
 const routes = { "/api/extract": handleExtract, "/api/suggest": handleSuggest, "/api/grocery": handleGrocery };
 
@@ -186,6 +224,11 @@ const server = http.createServer((req, res) => {
     return fs.createReadStream(path.join(__dirname, "public", "index.html")).pipe(res);
   }
   if (req.method === "POST" && routes[req.url]) {
+    const wait = rateLimited(visitorIp(req));
+    if (wait) {
+      res.writeHead(429, { "Content-Type": "application/json", "Retry-After": String(wait) });
+      return res.end(JSON.stringify({ error: `Too many requests. Please wait ${wait} seconds and try again.` }));
+    }
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", async () => {
