@@ -50,6 +50,9 @@
     .inner { max-width: 1100px; margin: 0 auto; }
     .crumbs { display: flex; gap: 14px; padding: 22px 0 16px; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
     .crumbs span:nth-child(2) { color: var(--faint); }
+    .account { margin-left: auto; display: flex; align-items: center; gap: 10px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+    .account button { padding: 6px 12px; font-size: 13px; }
+    .account .who { color: var(--muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* Page header: small label, big title, one line */
     .page { display: none; animation: fade .25s ease; }
@@ -180,7 +183,8 @@
       .tab { flex: 1; flex-direction: column; gap: 3px; padding: 8px 4px; font-size: 12px; text-align: center; position: relative; }
       .tab .badge { position: absolute; top: 2px; left: calc(50% + 6px); min-width: 18px; padding: 0 5px; font-size: 11px; line-height: 18px; }
       .main { padding: 0 16px 110px; }
-      .crumbs { font-size: 12px; }
+      .crumbs { font-size: 12px; align-items: center; }
+      .account .who { max-width: 110px; }
       .page-head { padding-top: 28px; }
       h1 { font-size: 30px; }
       .card { padding: 18px; }
@@ -221,7 +225,7 @@
     </aside>
 
     <main class="main"><div class="inner">
-      <div class="crumbs"><span>Fridge to Feast</span><span>/</span><span id="crumb">Kitchen</span></div>
+      <div class="crumbs"><span>Fridge to Feast</span><span>/</span><span id="crumb">Kitchen</span><span id="account" class="account"></span></div>
 
       <!-- 1. MY KITCHEN: what you already have -->
       <section id="page-kitchen" class="page active">
@@ -390,9 +394,12 @@
   </dialog>
   <div id="toast"></div>
 
+  <!-- Supabase's sign-in library (pinned version). If it can't load, the app still works signed out. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
   <script>
-    // ---------- Saved state (lives in this browser's localStorage) ----------
+    // ---------- Saved state (lives in this browser's localStorage, and in your account when signed in) ----------
     const STORE_KEY = "fridge-to-feast";
+    let sb = null, user = null, syncTimer = null; // sign-in: see "Sign-in and sync" near the end
     const state = Object.assign(
       { kitchen: [], staples: [], plan: [], meals: 5, people: 1, grocery: null, ideas: [], diet: "", glutenFree: false },
       load()
@@ -404,6 +411,7 @@
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {}
       render();
       scheduleGrocery();
+      queueSync();
     }
 
     // ---------- Small helpers ----------
@@ -1024,8 +1032,85 @@
       $("badge-grocery").textContent = groceryBusy ? "…" : toBuy || "";
       document.querySelectorAll(".badge").forEach((b) => b.classList.toggle("hidden", !b.textContent));
     }
+    // ---------- Sign-in and sync (Supabase + Google) ----------
+    // Signed out: everything stays in this browser, like before.
+    // Signed in: the same data is also saved to your own row in the database. Row Level Security
+    // (supabase/schema.sql) means the database only ever lets you read or write your own row.
+    const SYNCED = ["kitchen", "staples", "plan", "meals", "people", "grocery", "ideas", "diet", "glutenFree"];
+    const syncedData = () => Object.fromEntries(SYNCED.map((k) => [k, state[k]]));
+
+    function renderAccount() {
+      const box = $("account");
+      box.innerHTML = "";
+      if (!sb) return; // sign-in isn't set up on this server
+      if (user) box.append(
+        h("span", { class: "who", textContent: user.email, title: user.email }),
+        h("button", { type: "button", class: "ghost small", textContent: "Sign out", onclick: signOut })
+      );
+      else box.append(h("button", { type: "button", class: "small", textContent: "Sign in with Google",
+        onclick: () => sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } }) }));
+    }
+
+    // Save to the account a second after the last change, so quick taps become one save.
+    function queueSync() {
+      if (!user) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(pushToAccount, 1000);
+    }
+    async function pushToAccount() {
+      if (!user) return;
+      const { error } = await sb.from("user_data").upsert({ user_id: user.id, data: syncedData(), updated_at: new Date().toISOString() });
+      if (error) toast("Couldn't save to your account: " + error.message);
+    }
+
+    // Right after signing in: load the account's data, or, the first time, save this browser's data into it.
+    async function loadAccount() {
+      const { data, error } = await sb.from("user_data").select("data").eq("user_id", user.id).maybeSingle();
+      if (error) return toast("Couldn't load your account: " + error.message);
+      if (data) {
+        Object.assign(state, data.data);
+        state.plan.forEach((r) => { r.date ||= todayIso(); });
+        $("diet").value = state.diet || "";
+        $("gluten-free").checked = !!state.glutenFree;
+        save();
+        toast("Welcome back! Your kitchen is loaded");
+      } else {
+        await pushToAccount();
+        toast("Signed in. Your kitchen is now saved to your account");
+      }
+    }
+
+    // Signing out saves first, then clears this browser so the next person on a shared device starts fresh.
+    async function signOut() {
+      clearTimeout(syncTimer);
+      await pushToAccount();
+      await sb.auth.signOut();
+      try { localStorage.removeItem(STORE_KEY); } catch {}
+      location.reload();
+    }
+
+    async function startAccounts() {
+      try {
+        if (!window.supabase) return;
+        const cfg = await (await fetch("/api/config")).json();
+        if (!cfg.supabaseUrl || !cfg.supabaseKey) return;
+        sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+        sb.auth.onAuthStateChange((event, session) => {
+          const before = user?.id;
+          user = session?.user || null;
+          renderAccount();
+          // Supabase advises not calling it again inside this callback, so load just after.
+          if (user && user.id !== before) setTimeout(loadAccount, 0);
+        });
+      } catch (err) {
+        console.error("Sign-in unavailable: " + err.message);
+      }
+      renderAccount();
+    }
+
     render();
     scheduleGrocery(); // catch up if the plan changed since the list was last built
+    startAccounts();
   </script>
 </body>
 </html>
